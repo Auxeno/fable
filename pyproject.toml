@@ -15,8 +15,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ipykernel",
     "black",
+    "ipykernel",
+    "pytest",
 ]
 
 [tool.setuptools.packages.find]
