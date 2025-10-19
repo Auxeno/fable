@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 
 from tqdm import tqdm
 
-from .tokenize import load_tokenizer_config
+from .tokenize import load_tokenizer_config, tokenize
 
 
 def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> None:
@@ -172,4 +172,52 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
     """
     Tokenize cleaned TinyStories text files and persist the encoded bytes to disk.
     """
-    raise NotImplementedError("TinyStories tokenization pipeline to be implemented.")
+    repo_root = Path(__file__).resolve().parents[2]
+    source_dir = repo_root / "data" / "clean"
+    destination_dir = repo_root / "data" / "tokenized"
+    destination_dir.mkdir(parents=True, exist_ok=True)
+
+    config = load_tokenizer_config()
+
+    if verbose:
+        print("Tokenizing TinyStories dataset...")
+
+    for split in ("train", "valid"):
+        source_file = source_dir / f"tinystories-{split}.txt"
+        destination_file = destination_dir / f"tinystories-{split}.bin"
+
+        if not source_file.exists():
+            raise FileNotFoundError(
+                f"Clean TinyStories split `{source_file.as_posix()}` not found. "
+                "Run `clean_tinystories` before tokenizing."
+            )
+
+        total_bytes = source_file.stat().st_size
+        with (
+            source_file.open("r", encoding="utf-8") as src,
+            destination_file.open("wb") as dst,
+        ):
+            desc = f"Tokenizing `{source_file.name}`"
+            with tqdm(
+                total=total_bytes,
+                unit="B",
+                unit_scale=True,
+                desc=desc,
+                disable=not verbose,
+            ) as progress:
+                for line in src:
+                    token_ids = tokenize(line, config)
+                    dst.write(bytes(token_ids))
+                    progress.update(len(line.encode("utf-8")))
+
+        if verbose:
+            print(
+                f"Finished {split}: tokens written to `{destination_file.as_posix()}`."
+            )
+
+    if verbose:
+        try:
+            saved_path = destination_dir.relative_to(repo_root)
+        except ValueError:
+            saved_path = destination_dir
+        print(f"TinyStories tokens saved to `{saved_path.as_posix()}`.")
