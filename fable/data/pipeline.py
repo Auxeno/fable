@@ -105,7 +105,7 @@ def clean_tinystories(
     verbose: bool = True,
 ) -> None:
     """
-    Remove TinyStories examples containing characters not present in the configured alphabet.
+    Remove TinyStories examples containing characters not present in the tokenizer's alphabet.
 
     Parameters
     ----------
@@ -114,10 +114,10 @@ def clean_tinystories(
     output_dir : str or Path, optional
         Destination directory for the cleaned splits. Defaults to ``data/clean`` relative to the repository root.
     config_path : str or Path, optional
-        Path to the JSON file containing ``valid_characters`` and ``end_of_text_token`` entries.
-        Defaults to ``fable/data/tinystories-clean-config.json``.
+        Path to the JSON file containing ``char_to_id`` and ``end_of_text_token`` entries.
+        Defaults to ``fable/data/tokenizer-config.json``.
     verbose : bool, optional
-        Emit simple progress information while cleaning. Defaults to ``True``.
+        Prints simple progress information while cleaning. Defaults to ``True``.
     """
     repo_root = Path(__file__).resolve().parents[2]
 
@@ -137,13 +137,14 @@ def clean_tinystories(
 
     # Load cleaning configuration
     if config_path is None:
-        config_file = Path(__file__).with_name("tinystories-clean-config.json")
+        config_file = Path(__file__).with_name("tokenizer-config.json")
     else:
         config_file = Path(config_path)
 
     # Load cleaning config, retrieve valid characters and end-of-text token
     config = json.loads(config_file.read_text(encoding="utf-8"))
-    valid_characters: set[str] = set(config["valid_characters"])
+    char_to_id: dict[str, int] = config["char_to_id"]
+    valid_characters: set[str] = set(char_to_id.keys())
     end_of_text_token: str = config["end_of_text_token"]
 
     if verbose:
