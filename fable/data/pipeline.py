@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import jax.numpy as jnp
 from tqdm import tqdm
 
 from .tokenize import load_tokenizer_config, tokenize
@@ -18,7 +19,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
     Parameters
     ----------
     overwrite : bool, optional
-        Re-download files even if they already exist when ``True``. Defaults to ``False``.
+        Redownload files even if they already exist when ``True``. Defaults to ``False``.
     verbose : bool, optional
         Prints simple progress information while downloading. Defaults to ``True``.
 
@@ -226,3 +227,31 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
         except ValueError:
             saved_path = destination_dir
         print(f"TinyStories tokens saved to `{saved_path.as_posix()}`.")
+
+
+def load_tokenized_tinystories() -> dict[str, jnp.ndarray]:
+    """
+    Load tokenized TinyStories splits from disk into JAX arrays.
+
+    Returns
+    -------
+    dict[str, jnp.ndarray]
+        A dictionary mapping split names to JAX arrays of token IDs.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    token_dir = repo_root / "data" / "tokenized"
+
+    # Load tokenized splits
+    arrays: dict[str, jnp.ndarray] = {}
+    for split in ("train", "valid"):
+        token_file = token_dir / f"tinystories-{split}.bin"
+        if not token_file.exists():
+            raise FileNotFoundError(
+                f"Tokenized TinyStories split `{token_file.as_posix()}` not found. "
+                "Run `tokenize_tinystories` before loading tokens."
+            )
+
+        # Load raw bytes as uint8 tokens, then lift into a JAX array
+        arrays[split] = jnp.frombuffer(token_file.read_bytes(), dtype=jnp.uint8)
+
+    return arrays
