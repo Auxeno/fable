@@ -15,19 +15,12 @@ _TINYSTORIES_URLS: dict[str, str] = {
 }
 
 
-def download_tinystories(
-    raw_dir: str | Path | None = None,
-    *,
-    overwrite: bool = False,
-    verbose: bool = True,
-) -> None:
+def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> None:
     """
     Download TinyStories splits from Hugging Face into the raw data directory.
 
     Parameters
     ----------
-    raw_dir : str or Path, optional
-        Destination directory for the raw dataset files. Defaults to ``data/raw`` under the repository root.
     overwrite : bool, optional
         Re-download files even if they already exist when ``True``. Defaults to ``False``.
     verbose : bool, optional
@@ -39,11 +32,7 @@ def download_tinystories(
         Raised when a split cannot be downloaded successfully.
     """
     # Create the target directory if it doesn't exist
-    if raw_dir is None:
-        target_dir = Path(__file__).resolve().parents[2] / "data" / "raw"
-    else:
-        target_dir = Path(raw_dir)
-
+    target_dir = Path(__file__).resolve().parents[2] / "data" / "raw"
     target_dir.mkdir(parents=True, exist_ok=True)
 
     display_root = Path(__file__).resolve().parents[3]
@@ -98,48 +87,25 @@ def download_tinystories(
         print(f"TinyStories dataset saved to `{saved_path.as_posix()}`.")
 
 
-def clean_tinystories(
-    raw_dir: str | Path | None = None,
-    output_dir: str | Path | None = None,
-    config_path: str | Path | None = None,
-    verbose: bool = True,
-) -> None:
+def clean_tinystories(verbose: bool = True) -> None:
     """
     Remove TinyStories examples containing characters not present in the tokenizer's alphabet.
 
     Parameters
     ----------
-    raw_dir : str or Path, optional
-        Directory holding the raw TinyStories splits. Defaults to ``data/raw`` relative to the repository root.
-    output_dir : str or Path, optional
-        Destination directory for the cleaned splits. Defaults to ``data/clean`` relative to the repository root.
-    config_path : str or Path, optional
-        Path to the JSON file containing ``char_to_id`` and ``end_of_text_token`` entries.
-        Defaults to ``fable/data/tokenizer-config.json``.
     verbose : bool, optional
         Prints simple progress information while cleaning. Defaults to ``True``.
     """
-    repo_root = Path(__file__).resolve().parents[2]
-
     # Locate raw data directory
-    if raw_dir is None:
-        source_dir = repo_root / "data" / "raw"
-    else:
-        source_dir = Path(raw_dir)
+    repo_root = Path(__file__).resolve().parents[2]
+    source_dir = repo_root / "data" / "raw"
 
     # Prepare clean data directory
-    if output_dir is None:
-        destination_dir = repo_root / "data" / "clean"
-    else:
-        destination_dir = Path(output_dir)
-
+    destination_dir = repo_root / "data" / "clean"
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load cleaning configuration
-    if config_path is None:
-        config_file = Path(__file__).with_name("tokenizer-config.json")
-    else:
-        config_file = Path(config_path)
+    # Load tokenizer configuration
+    config_file = Path(__file__).with_name("tokenizer-config.json")
 
     # Load cleaning config, retrieve valid characters and end-of-text token
     config = json.loads(config_file.read_text(encoding="utf-8"))
