@@ -86,7 +86,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
             saved_path = target_dir.relative_to(display_root)
         except ValueError:
             saved_path = target_dir
-        print(f"TinyStories dataset saved to `{saved_path.as_posix()}`.")
+        print(f"TinyStories dataset saved to `{saved_path.as_posix()}`.\n")
 
 
 def clean_tinystories(*, verbose: bool = True) -> None:
@@ -166,7 +166,7 @@ def clean_tinystories(*, verbose: bool = True) -> None:
             saved_path = destination_dir.relative_to(repo_root)
         except ValueError:
             saved_path = destination_dir
-        print(f"TinyStories dataset cleaned and saved to `{saved_path.as_posix()}`.")
+        print(f"TinyStories dataset cleaned and saved to `{saved_path.as_posix()}`.\n")
 
 
 def tokenize_tinystories(*, verbose: bool = True) -> None:
@@ -226,7 +226,7 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
             saved_path = destination_dir.relative_to(repo_root)
         except ValueError:
             saved_path = destination_dir
-        print(f"TinyStories tokens saved to `{saved_path.as_posix()}`.")
+        print(f"TinyStories tokens saved to `{saved_path.as_posix()}`.\n")
 
 
 def load_tokenized_tinystories() -> dict[str, jnp.ndarray]:
@@ -255,3 +255,23 @@ def load_tokenized_tinystories() -> dict[str, jnp.ndarray]:
         arrays[split] = jnp.frombuffer(token_file.read_bytes(), dtype=jnp.uint8)
 
     return arrays
+
+
+def prepare_tinystories_dataset(
+    *,
+    overwrite_download: bool = False,
+    verbose: bool = True,
+) -> None:
+    """
+    Run the full TinyStories data pipeline: download, clean, and tokenize.
+
+    Parameters
+    ----------
+    overwrite_download : bool, optional
+        Redownload files even if they already exist when ``True``. Defaults to ``False``.
+    verbose : bool, optional
+        Prints simple progress information while running the pipeline. Defaults to ``True``.
+    """
+    download_tinystories(overwrite=overwrite_download, verbose=verbose)
+    clean_tinystories(verbose=verbose)
+    tokenize_tinystories(verbose=verbose)
