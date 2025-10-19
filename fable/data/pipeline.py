@@ -88,7 +88,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
         print(f"TinyStories dataset saved to `{saved_path.as_posix()}`.")
 
 
-def clean_tinystories(verbose: bool = True) -> None:
+def clean_tinystories(*, verbose: bool = True) -> None:
     """
     Remove TinyStories examples containing characters not present in the tokenizer's alphabet.
 
@@ -168,7 +168,7 @@ def clean_tinystories(verbose: bool = True) -> None:
         print(f"TinyStories dataset cleaned and saved to `{saved_path.as_posix()}`.")
 
 
-def tokenize_tinystories(verbose: bool = True) -> None:
+def tokenize_tinystories(*, verbose: bool = True) -> None:
     """
     Tokenize cleaned TinyStories text files and persist the encoded bytes to disk.
     """

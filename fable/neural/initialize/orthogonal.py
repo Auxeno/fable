@@ -1,3 +1,3 @@
 """
-Implements orthogonal weight initializers.
+Orthogonal weight initializer.
 """
