@@ -14,6 +14,7 @@ _TINYSTORIES_URLS: dict[str, str] = {
 
 def download_tinystories(
     raw_dir: str | Path | None = None,
+    *,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> None:
