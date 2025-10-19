@@ -2,6 +2,7 @@
 Utilities for downloading and preparing the TinyStories dataset.
 """
 
+import json
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -111,3 +112,92 @@ def download_tinystories(
 
     if verbose:
         print("Finished downloading TinyStories dataset.")
+
+
+def clean_tinystories(
+    raw_dir: str | Path | None = None,
+    *,
+    output_dir: str | Path | None = None,
+    config_path: str | Path | None = None,
+    verbose: bool = True,
+) -> None:
+    """
+    Remove TinyStories examples containing characters not present in the configured alphabet.
+
+    Parameters
+    ----------
+    raw_dir : str or Path, optional
+        Directory holding the raw TinyStories splits. Defaults to ``data/raw`` relative to the repository root.
+    output_dir : str or Path, optional
+        Destination directory for the cleaned splits. Defaults to ``data/clean`` relative to the repository root.
+    config_path : str or Path, optional
+        Path to the JSON file containing ``valid_characters`` and ``end_of_text_token`` entries.
+        Defaults to ``fable/data/tinystories-clean-config.json``.
+    verbose : bool, optional
+        Emit simple progress information while cleaning. Defaults to ``True``.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+
+    # Locate raw data directory
+    if raw_dir is None:
+        source_dir = repo_root / "data" / "raw"
+    else:
+        source_dir = Path(raw_dir)
+
+    # Prepare clean data directory
+    if output_dir is None:
+        destination_dir = repo_root / "data" / "clean"
+    else:
+        destination_dir = Path(output_dir)
+
+    destination_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load cleaning configuration
+    if config_path is None:
+        config_file = Path(__file__).with_name("tinystories-clean-config.json")
+    else:
+        config_file = Path(config_path)
+
+    # Load cleaning config, retrieve valid characters and end-of-text token
+    config = json.loads(config_file.read_text(encoding="utf-8"))
+    valid_characters: set[str] = set(config["valid_characters"])
+    end_of_text_token: str = config["end_of_text_token"]
+
+    for split in ("train", "valid"):
+        source_file = source_dir / f"tinystories-{split}.txt"
+        destination_file = destination_dir / f"tinystories-{split}.txt"
+
+        if verbose:
+            print(f"Cleaning TinyStories {split} split...")
+
+        kept = 0
+        dropped = 0
+
+        # Process line-by-line, accumulating until the end-of-text token is found
+        with (
+            source_file.open("r", encoding="utf-8") as src,
+            destination_file.open("w", encoding="utf-8", newline="") as dst,
+        ):
+            # Buffer to accumulate lines for the current story
+            line_buffer: list[str] = []
+
+            # Read through the whole source file
+            for line in src:
+                line_buffer.append(line)
+
+                # Check if the end-of-text token is present in the current line
+                if end_of_text_token in line:
+                    # Join the buffered lines to form the complete story
+                    story = "".join(line_buffer)
+
+                    # Write the story to the destination if valid, else drop it
+                    if set(story).issubset(valid_characters):
+                        dst.write(story)
+                        kept += 1
+                    else:
+                        dropped += 1
+
+                    line_buffer.clear()
+
+        if verbose:
+            print(f"Finished {split}: kept {kept} stories, dropped {dropped} stories.")
