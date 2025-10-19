@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fable"
+version = "0.1.0"
+description = "Educational, from-scratch JAX GPT stack trained on the TinyStories dataset."
+readme = "readme.md"
+requires-python = ">=3.10"
+authors = [{ name = "Alex Goddard" }]
+dependencies = [
+    "jax",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "black",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fable*"]
+exclude = ["notebooks", "scripts", "checkpoints", "data", "experiments.ipynb"]
