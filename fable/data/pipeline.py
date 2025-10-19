@@ -64,19 +64,7 @@ def download_tinystories(
         try:
             request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urlopen(request) as response, destination.open("wb") as output_file:
-                try:
-                    display_path = (
-                        destination.parent.relative_to(display_root)
-                        if verbose
-                        else destination.parent
-                    )
-                except ValueError:
-                    display_path = destination.parent
-                prefix = (
-                    f"Downloading `{filename}` to `{display_path.as_posix()}`"
-                    if verbose
-                    else f"Downloading `{filename}`"
-                )
+                prefix = f"Downloading `{filename}`"
 
                 total_header = response.headers.get("Content-Length")
                 total_bytes = int(total_header) if total_header is not None else None
@@ -103,7 +91,11 @@ def download_tinystories(
             ) from exc
 
     if verbose:
-        print("Finished downloading TinyStories dataset.")
+        try:
+            saved_path = target_dir.relative_to(display_root)
+        except ValueError:
+            saved_path = target_dir
+        print(f"TinyStories dataset saved to `{saved_path.as_posix()}`.")
 
 
 def clean_tinystories(
@@ -202,3 +194,10 @@ def clean_tinystories(
 
         if verbose:
             print(f"Finished {split}: kept {kept} stories, dropped {dropped} stories.")
+
+    if verbose:
+        try:
+            saved_path = destination_dir.relative_to(repo_root)
+        except ValueError:
+            saved_path = destination_dir
+        print(f"TinyStories dataset cleaned and saved to `{saved_path.as_posix()}`.")
