@@ -2,12 +2,13 @@
 Utilities for downloading and preparing the TinyStories dataset.
 """
 
-import json
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from tqdm import tqdm
+
+from .tokenize import load_tokenizer_config
 
 
 def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> None:
@@ -19,7 +20,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
     overwrite : bool, optional
         Re-download files even if they already exist when ``True``. Defaults to ``False``.
     verbose : bool, optional
-        Emit simple progress information while downloading. Defaults to ``True``.
+        Prints simple progress information while downloading. Defaults to ``True``.
 
     Raises
     ------
@@ -105,10 +106,7 @@ def clean_tinystories(verbose: bool = True) -> None:
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     # Load tokenizer configuration
-    config_file = Path(__file__).with_name("tokenizer-config.json")
-
-    # Load cleaning config, retrieve valid characters and end-of-text token
-    config = json.loads(config_file.read_text(encoding="utf-8"))
+    config = load_tokenizer_config()
     char_to_id: dict[str, int] = config["char_to_id"]
     valid_characters: set[str] = set(char_to_id.keys())
     end_of_text_token: str = config["end_of_text_token"]
@@ -168,3 +166,10 @@ def clean_tinystories(verbose: bool = True) -> None:
         except ValueError:
             saved_path = destination_dir
         print(f"TinyStories dataset cleaned and saved to `{saved_path.as_posix()}`.")
+
+
+def tokenize_tinystories(verbose: bool = True) -> None:
+    """
+    Tokenize cleaned TinyStories text files and persist the encoded bytes to disk.
+    """
+    raise NotImplementedError("TinyStories tokenization pipeline to be implemented.")
