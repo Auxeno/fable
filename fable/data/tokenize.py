@@ -10,6 +10,11 @@ from typing import Sequence
 def load_tokenizer_config() -> dict:
     """
     Load the tokenizer configuration JSON as a dictionary.
+
+    Returns
+    -------
+    dict
+        The tokenizer config dictionary.
     """
     path = Path(__file__).with_name("tokenizer-config.json")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -18,9 +23,18 @@ def load_tokenizer_config() -> dict:
 def tokenize(text: str, tokenizer_config: dict) -> list[int]:
     """
     Tokenize a string of text into a sequence of integers IDs.
+
+    Parameters
+    ----------
+    text : str
+        The input text to tokenize.
+    tokenizer_config : dict
+        The tokenizer config dictionary, as returned by ``load_tokenizer_config()``.
     """
+    # Build mapping from character to ID
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
 
+    # Convert characters to token IDs
     token_ids: list[int] = []
     for char in text:
         try:
@@ -36,10 +50,19 @@ def tokenize(text: str, tokenizer_config: dict) -> list[int]:
 def detokenize(token_ids: Sequence[int], tokenizer_config: dict) -> str:
     """
     Convert a string of sequence of integer IDs back into text.
+
+    Parameters
+    ----------
+    token_ids : Sequence[int]
+        The sequence of token IDs to convert back into text.
+    tokenizer_config : dict
+        The tokenizer config dictionary, as returned by ``load_tokenizer_config()``.
     """
+    # Build reverse mapping from ID to character
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
     id_to_char = {token_id: char for char, token_id in char_to_id.items()}
 
+    # Convert token IDs back to characters
     characters: list[str] = []
     for token_id in token_ids:
         try:

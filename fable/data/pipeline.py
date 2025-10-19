@@ -171,6 +171,11 @@ def clean_tinystories(*, verbose: bool = True) -> None:
 def tokenize_tinystories(*, verbose: bool = True) -> None:
     """
     Tokenize cleaned TinyStories text files and persist the encoded bytes to disk.
+
+    Parameters
+    ----------
+    verbose : bool, optional
+        Prints simple progress information while cleaning. Defaults to ``True``.
     """
     repo_root = Path(__file__).resolve().parents[2]
     source_dir = repo_root / "data" / "clean"
