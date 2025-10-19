@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from tqdm import tqdm
+
 _TINYSTORIES_URLS: dict[str, str] = {
     "train": "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-train.txt",
     "valid": "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt",
@@ -62,48 +64,38 @@ def download_tinystories(
         try:
             request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urlopen(request) as response, destination.open("wb") as output_file:
-                if verbose:
-                    try:
-                        display_path = destination.parent.relative_to(display_root)
-                    except ValueError:
-                        display_path = destination.parent
-                    prefix = f"Downloading `{filename}` to `{display_path.as_posix()}`"
-                    print(prefix, end="", flush=True)
+                try:
+                    display_path = (
+                        destination.parent.relative_to(display_root)
+                        if verbose
+                        else destination.parent
+                    )
+                except ValueError:
+                    display_path = destination.parent
+                prefix = (
+                    f"Downloading `{filename}` to `{display_path.as_posix()}`"
+                    if verbose
+                    else f"Downloading `{filename}`"
+                )
 
                 total_header = response.headers.get("Content-Length")
                 total_bytes = int(total_header) if total_header is not None else None
-                downloaded = 0
 
-                while True:
-                    # 1 MiB chunks
-                    chunk = response.read(1 << 20)
-                    if not chunk:
-                        break
+                with tqdm(
+                    total=total_bytes,
+                    unit="B",
+                    unit_scale=True,
+                    desc=prefix,
+                    disable=not verbose,
+                ) as progress:
+                    while True:
+                        # 1 MiB chunks
+                        chunk = response.read(1 << 20)
+                        if not chunk:
+                            break
 
-                    output_file.write(chunk)
-                    downloaded += len(chunk)
-
-                    if verbose:
-                        if total_bytes:
-                            fraction = min(downloaded / total_bytes, 1.0)
-                            filled = int(fraction * 20)
-                            bar = "█" * filled + "." * (20 - filled)
-                            percent = fraction * 100
-                            print(
-                                f"\r{prefix} [{bar}] {percent:5.1f}%",
-                                end="",
-                                flush=True,
-                            )
-                        else:
-                            mib = downloaded / (1 << 20)
-                            print(
-                                f"\r{prefix} {mib:6.1f} MiB",
-                                end="",
-                                flush=True,
-                            )
-
-                if verbose:
-                    print()
+                        output_file.write(chunk)
+                        progress.update(len(chunk))
 
         except (HTTPError, URLError) as exc:
             raise RuntimeError(
@@ -116,7 +108,6 @@ def download_tinystories(
 
 def clean_tinystories(
     raw_dir: str | Path | None = None,
-    *,
     output_dir: str | Path | None = None,
     config_path: str | Path | None = None,
     verbose: bool = True,
@@ -163,15 +154,16 @@ def clean_tinystories(
     valid_characters: set[str] = set(config["valid_characters"])
     end_of_text_token: str = config["end_of_text_token"]
 
+    if verbose:
+        print("Cleaning TinyStories dataset...")
+
     for split in ("train", "valid"):
         source_file = source_dir / f"tinystories-{split}.txt"
         destination_file = destination_dir / f"tinystories-{split}.txt"
 
-        if verbose:
-            print(f"Cleaning TinyStories {split} split...")
-
         kept = 0
         dropped = 0
+        total_bytes = source_file.stat().st_size if source_file.exists() else None
 
         # Process line-by-line, accumulating until the end-of-text token is found
         with (
@@ -181,23 +173,32 @@ def clean_tinystories(
             # Buffer to accumulate lines for the current story
             line_buffer: list[str] = []
 
-            # Read through the whole source file
-            for line in src:
-                line_buffer.append(line)
+            desc = f"Cleaning `{source_file.name}`"
+            with tqdm(
+                total=total_bytes,
+                unit="B",
+                unit_scale=True,
+                desc=desc,
+                disable=not verbose,
+            ) as progress:
+                # Read through the whole source file
+                for line in src:
+                    line_buffer.append(line)
+                    progress.update(len(line.encode("utf-8")))
 
-                # Check if the end-of-text token is present in the current line
-                if end_of_text_token in line:
-                    # Join the buffered lines to form the complete story
-                    story = "".join(line_buffer)
+                    # Check if the end-of-text token is present in the current line
+                    if end_of_text_token in line:
+                        # Join the buffered lines to form the complete story
+                        story = "".join(line_buffer)
 
-                    # Write the story to the destination if valid, else drop it
-                    if set(story).issubset(valid_characters):
-                        dst.write(story)
-                        kept += 1
-                    else:
-                        dropped += 1
+                        # Write the story to the destination if valid, else drop it
+                        if set(story).issubset(valid_characters):
+                            dst.write(story)
+                            kept += 1
+                        else:
+                            dropped += 1
 
-                    line_buffer.clear()
+                        line_buffer.clear()
 
         if verbose:
             print(f"Finished {split}: kept {kept} stories, dropped {dropped} stories.")
