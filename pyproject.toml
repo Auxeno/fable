@@ -25,3 +25,6 @@ dev = [
 where = ["."]
 include = ["fable*"]
 exclude = ["notebooks", "scripts", "checkpoints", "data", "experiments.ipynb"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
