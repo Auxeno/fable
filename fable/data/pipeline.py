@@ -9,11 +9,6 @@ from urllib.request import Request, urlopen
 
 from tqdm import tqdm
 
-_TINYSTORIES_URLS: dict[str, str] = {
-    "train": "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-train.txt",
-    "valid": "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt",
-}
-
 
 def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> None:
     """
@@ -40,10 +35,15 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
     if verbose:
         print("Downloading TinyStories dataset...")
 
-    # Download train and validation splits
-    for split, url in _TINYSTORIES_URLS.items():
+    # Download train and validation splits from HuggingFace
+    for split in ("train", "valid"):
         filename = f"tinystories-{split}.txt"
         destination = target_dir / filename
+        url = (
+            "https://huggingface.co/datasets/roneneldan/TinyStories/"
+            "resolve/main/TinyStories-"
+            f"{split}.txt"
+        )
 
         if destination.exists() and not overwrite:
             if verbose:
