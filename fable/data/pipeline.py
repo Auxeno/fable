@@ -113,17 +113,9 @@ def clean_tinystories(*, verbose: bool = True) -> None:
     end_of_text_token: str = config["end_of_text_token"]
     special_tokens: dict[str, int] = config.get("special_tokens", {})
 
-    try:
-        end_of_text_id = special_tokens[end_of_text_token]
-    except KeyError as exc:
+    if end_of_text_token not in special_tokens:
         raise KeyError(
             "Tokenizer config must register the end-of-text token as a special token."
-        ) from exc
-
-    if end_of_text_id != config.get("end_of_text_id"):
-        raise ValueError(
-            "Tokenizer config end-of-text token ID mismatch between `special_tokens` "
-            "and `end_of_text_id`."
         )
 
     if verbose:
@@ -199,20 +191,11 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
 
     config = load_tokenizer_config()
     end_of_text_token = config["end_of_text_token"]
-    end_of_text_id = config.get("end_of_text_id")
+    special_tokens: dict[str, int] = config.get("special_tokens", {})
 
-    if end_of_text_id is None:
+    if end_of_text_token not in special_tokens:
         raise KeyError(
-            "Tokenizer config missing required `end_of_text_id` entry for special tokens."
-        )
-
-    if (
-        end_of_text_token not in config.get("special_tokens", {})
-        or config["special_tokens"][end_of_text_token] != end_of_text_id
-    ):
-        raise ValueError(
-            "Tokenizer config must include the end-of-text token in `special_tokens` "
-            "with an ID matching `end_of_text_id`."
+            "Tokenizer config must include the end-of-text token in `special_tokens`."
         )
 
     if verbose:
