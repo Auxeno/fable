@@ -40,7 +40,7 @@ class TransformerDecoder(nnx.Module):
 
         self.attention = SelfAttention(embed_dim, num_heads, rngs=rngs)
 
-        self.feedforward = FeedForward(embed_dim, rngs=rngs)
+        self.feed_forward = FeedForward(embed_dim, rngs=rngs)
 
     def __call__(self, x: jax.Array) -> jax.Array:
         """
@@ -64,7 +64,7 @@ class TransformerDecoder(nnx.Module):
         x = self.layer_norm_2(x)
 
         residual = x
-        x = self.feedforward(x)
+        x = self.feed_forward(x)
         x = self.dropout_2(x)
         x = x + residual
 
