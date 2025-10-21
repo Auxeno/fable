@@ -16,5 +16,5 @@
 
 ## 📖 Overview
 
-Fable is a from-scratch JAX GPT stack trained on the TinyStories dataset.
-The project is designed to be educational, simple, minimal and very fast.
+Fable is a JAX GPT stack trained on the TinyStories dataset.
+The project is designed to be educational, simple, minimal and fast.
