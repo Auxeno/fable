@@ -1,3 +1,0 @@
-"""
-Orthogonal weight initializer.
-"""

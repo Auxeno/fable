@@ -1,3 +1,0 @@
-"""
-Cross-entropy loss function.
-"""

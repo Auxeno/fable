@@ -1,3 +1,0 @@
-"""
-Stateless primitive functions.
-"""
