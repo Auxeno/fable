@@ -15,6 +15,25 @@ class TestTokenize:
         with pytest.raises(ValueError, match=r"Character 'b' missing"):
             tokenize("ab", tokenizer_config)
 
+    def test_tokenize_prefers_special_tokens(self):
+        tokenizer_config = {
+            "char_to_id": {
+                "f": 1,
+                "o": 2,
+                "<": 3,
+                "|": 4,
+                "e": 5,
+                "n": 6,
+                "d": 7,
+                "t": 8,
+                "x": 9,
+            },
+            "special_tokens": {"<|endoftext|>": 99},
+            "end_of_text_token": "<|endoftext|>",
+        }
+
+        assert tokenize("foo<|endoftext|>", tokenizer_config) == [1, 2, 2, 99]
+
 
 class TestDetokenize:
     def test_detokenize_basic_ids(self):
@@ -27,3 +46,12 @@ class TestDetokenize:
 
         with pytest.raises(ValueError, match="Token ID 2 missing"):
             detokenize([5, 2], tokenizer_config)
+
+    def test_detokenize_special_tokens(self):
+        tokenizer_config = {
+            "char_to_id": {"h": 1, "!": 2},
+            "special_tokens": {"<|endoftext|>": 3},
+            "end_of_text_token": "<|endoftext|>",
+        }
+
+        assert detokenize([1, 2, 3], tokenizer_config) == "h!<|endoftext|>"

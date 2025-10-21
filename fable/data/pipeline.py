@@ -111,6 +111,12 @@ def clean_tinystories(*, verbose: bool = True) -> None:
     char_to_id: dict[str, int] = config["char_to_id"]
     valid_characters: set[str] = set(char_to_id.keys())
     end_of_text_token: str = config["end_of_text_token"]
+    special_tokens: dict[str, int] = config.get("special_tokens", {})
+
+    if end_of_text_token not in special_tokens:
+        raise KeyError(
+            "Tokenizer config must register the end-of-text token as a special token."
+        )
 
     if verbose:
         print("Cleaning TinyStories dataset...")
@@ -184,6 +190,13 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     config = load_tokenizer_config()
+    end_of_text_token = config["end_of_text_token"]
+    special_tokens: dict[str, int] = config.get("special_tokens", {})
+
+    if end_of_text_token not in special_tokens:
+        raise KeyError(
+            "Tokenizer config must include the end-of-text token in `special_tokens`."
+        )
 
     if verbose:
         print("Tokenizing TinyStories dataset...")
