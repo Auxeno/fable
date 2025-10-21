@@ -20,6 +20,20 @@ def load_tokenizer_config() -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def get_vocabulary_size() -> int:
+    """
+    Compute the tokenizer vocabulary size from the JSON configuration.
+
+    Returns
+    -------
+    int
+        The total number of token IDs defined by the tokenizer.
+    """
+    config = load_tokenizer_config()
+    special_tokens: dict[str, int] = config.get("special_tokens", {})
+    return len(config["char_to_id"]) + len(special_tokens)
+
+
 def tokenize(text: str, tokenizer_config: dict) -> list[int]:
     """
     Tokenize a string of text into a sequence of integers IDs.

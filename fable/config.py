@@ -4,6 +4,8 @@ Configuration management for Fable experiments.
 
 from dataclasses import dataclass
 
+from fable.data.tokenize import get_vocabulary_size
+
 
 @dataclass(frozen=True)
 class GPTConfig:
@@ -16,7 +18,7 @@ class GPTConfig:
     num_heads: int = 4
     """Number of attention heads."""
 
-    vocab_size: int = 128  # TODO: set from tokenizer
+    vocab_size: int = get_vocabulary_size()
     """Size of the vocabulary."""
 
     max_seq_len: int = 512
