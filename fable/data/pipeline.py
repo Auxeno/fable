@@ -19,9 +19,9 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
     Parameters
     ----------
     overwrite : bool, optional
-        Redownload files even if they already exist when ``True``. Defaults to ``False``.
+        Redownload files even if they already exist when `True`. Defaults to `False`.
     verbose : bool, optional
-        Prints simple progress information while downloading. Defaults to ``True``.
+        Prints simple progress information while downloading. Defaults to `True`.
 
     Raises
     ------
@@ -96,7 +96,7 @@ def clean_tinystories(*, verbose: bool = True) -> None:
     Parameters
     ----------
     verbose : bool, optional
-        Prints simple progress information while cleaning. Defaults to ``True``.
+        Prints simple progress information while cleaning. Defaults to `True`.
     """
     # Locate raw data directory
     repo_root = Path(__file__).resolve().parents[2]
@@ -176,7 +176,7 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
     Parameters
     ----------
     verbose : bool, optional
-        Prints simple progress information while cleaning. Defaults to ``True``.
+        Prints simple progress information while cleaning. Defaults to `True`.
     """
     repo_root = Path(__file__).resolve().parents[2]
     source_dir = repo_root / "data" / "clean"
@@ -268,9 +268,9 @@ def prepare_tinystories_dataset(
     Parameters
     ----------
     overwrite_download : bool, optional
-        Redownload files even if they already exist when ``True``. Defaults to ``False``.
+        Redownload files even if they already exist when `True`. Defaults to `False`.
     verbose : bool, optional
-        Prints simple progress information while running the pipeline. Defaults to ``True``.
+        Prints simple progress information while running the pipeline. Defaults to `True`.
     """
     download_tinystories(overwrite=overwrite_download, verbose=verbose)
     clean_tinystories(verbose=verbose)

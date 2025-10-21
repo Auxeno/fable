@@ -29,7 +29,7 @@ def tokenize(text: str, tokenizer_config: dict) -> list[int]:
     text : str
         The input text to tokenize.
     tokenizer_config : dict
-        The tokenizer config dictionary, as returned by ``load_tokenizer_config()``.
+        The tokenizer config dictionary, as returned by `load_tokenizer_config()`.
     """
     # Build mapping from character to ID
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
@@ -56,7 +56,7 @@ def detokenize(token_ids: Sequence[int], tokenizer_config: dict) -> str:
     token_ids : Sequence[int]
         The sequence of token IDs to convert back into text.
     tokenizer_config : dict
-        The tokenizer config dictionary, as returned by ``load_tokenizer_config()``.
+        The tokenizer config dictionary, as returned by `load_tokenizer_config()`.
     """
     # Build reverse mapping from ID to character
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
