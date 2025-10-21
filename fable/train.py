@@ -15,6 +15,17 @@ def generate_batch_indices(
     """
     Draw a batch of contiguous token indices from a dataset.
 
+    Parameters
+    ----------
+    key: jax.Array
+        PRNG key for random number generation.
+    batch_size: int
+        Number of sequences in the batch.
+    seq_len: int
+        Length of each sequence.
+    dataset_length: int
+        Total number of tokens in the dataset.
+
     Returns
     -------
     indices: jax.Array
