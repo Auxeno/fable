@@ -98,5 +98,9 @@
     "|": 94,
     "}": 95,
     "~": 96
-  }
+  },
+  "special_tokens": {
+    "<|endoftext|>": 97
+  },
+  "end_of_text_id": 97
 }

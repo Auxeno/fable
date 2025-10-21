@@ -33,16 +33,48 @@ def tokenize(text: str, tokenizer_config: dict) -> list[int]:
     """
     # Build mapping from character to ID
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
+    special_tokens: dict[str, int] = tokenizer_config.get("special_tokens", {})
 
-    # Convert characters to token IDs
+    # Order special tokens longest-first so overlapping prefixes match greedily.
+    special_token_items = sorted(
+        special_tokens.items(), key=lambda item: len(item[0]), reverse=True
+    )
+
     token_ids: list[int] = []
-    for char in text:
+
+    contains_special = any(token in text for token, _ in special_token_items)
+    if not special_token_items or not contains_special:
+        for char in text:
+            try:
+                token_ids.append(char_to_id[char])
+            except KeyError as exc:
+                raise ValueError(
+                    f"Character {char!r} missing from tokenizer vocabulary."
+                ) from exc
+        return token_ids
+
+    index = 0
+    while index < len(text):
+        matched_special = False
+
+        for token_string, token_id in special_token_items:
+            if text.startswith(token_string, index):
+                token_ids.append(token_id)
+                index += len(token_string)
+                matched_special = True
+                break
+
+        if matched_special:
+            continue
+
+        char = text[index]
         try:
             token_ids.append(char_to_id[char])
         except KeyError as exc:
             raise ValueError(
                 f"Character {char!r} missing from tokenizer vocabulary."
             ) from exc
+        index += 1
 
     return token_ids
 
@@ -60,13 +92,18 @@ def detokenize(token_ids: Sequence[int], tokenizer_config: dict) -> str:
     """
     # Build reverse mapping from ID to character
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
-    id_to_char = {token_id: char for char, token_id in char_to_id.items()}
+    special_tokens: dict[str, int] = tokenizer_config.get("special_tokens", {})
+
+    id_to_symbol: dict[int, str] = {
+        token_id: char for char, token_id in char_to_id.items()
+    }
+    id_to_symbol.update({token_id: token for token, token_id in special_tokens.items()})
 
     # Convert token IDs back to characters
     characters: list[str] = []
     for token_id in token_ids:
         try:
-            characters.append(id_to_char[token_id])
+            characters.append(id_to_symbol[token_id])
         except KeyError as exc:
             raise ValueError(
                 f"Token ID {token_id} missing from tokenizer vocabulary."
