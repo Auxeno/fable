@@ -21,17 +21,20 @@ class GPTConfig:
     vocab_size: int = get_vocabulary_size()
     """Size of the vocabulary."""
 
-    max_seq_len: int = 512
+    max_seq_len: int = 128
     """Maximum sequence length."""
 
     dropout_rate: float = 0.1
     """Dropout rate to apply after embeddings and transformer blocks."""
 
-    learning_rate: float = 1e-4
+    learning_rate: float = 2.5e-4
     """Learning rate for the optimizer."""
 
-    batch_size: int = 32
+    batch_size: int = 64
     """Batch size for training."""
 
     num_epochs: int = 10
     """Number of training epochs."""
+
+    seed: int = 0
+    """Initial RNG seed."""
