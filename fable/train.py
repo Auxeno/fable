@@ -2,6 +2,8 @@
 Model training logic and utilities.
 """
 
+from collections import deque
+
 import jax
 import jax.numpy as jnp
 import optax
@@ -99,7 +101,7 @@ def train_step(
     state: nnx.State,
     inputs: jax.Array,
     targets: jax.Array,
-) -> nnx.State:
+) -> tuple[jax.Array, nnx.State]:
     """
     Run a single optimization step.
 
@@ -116,6 +118,8 @@ def train_step(
 
     Returns
     -------
+    loss : jax.Array
+        Scalar training loss for the current batch.
     new_state : nnx.State
         Updated state containing model and optimizer mutations.
     """
@@ -129,12 +133,12 @@ def train_step(
         ).mean()
         return loss
 
-    grads = nnx.grad(loss_fn)(model)
+    loss, grads = nnx.value_and_grad(loss_fn)(model)
     optimizer.update(model, grads)
 
     new_state = nnx.state((model, optimizer))
 
-    return new_state
+    return loss, new_state
 
 
 def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.State]:
@@ -178,6 +182,9 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     # Number of batches per training epoch, tokens expected to appear once per epoch
     num_batches = dataset_length // (config.batch_size * config.max_seq_len)
 
+    # Track a rolling window of batch losses for printing
+    losses = deque(maxlen=100)
+
     if config.verbose:
         print(f"Training GPT model for {config.num_epochs} epochs...")
 
@@ -194,8 +201,13 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
                     batch_size=config.batch_size,
                     seq_len=config.max_seq_len,
                 )
+
                 # Perform training step
-                state = step_fn(graphdef, state, inputs, targets)
+                loss, state = step_fn(graphdef, state, inputs, targets)
+
+                if config.verbose:
+                    losses.append(loss.item())
+                    progress.set_postfix(loss=f"{sum(losses) / len(losses):.4f}")
 
     if config.verbose:
         print(
