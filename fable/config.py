@@ -38,3 +38,6 @@ class GPTConfig:
 
     seed: int = 0
     """Initial RNG seed."""
+
+    verbose: bool = True
+    """Print training progress to console."""

@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import optax
 from flax import nnx
+from tqdm import tqdm
 
 from fable.config import GPTConfig
 from fable.data.pipeline import load_tokenized_tinystories
@@ -181,16 +182,32 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     # Each token in dataset is expected to appear once per epoch
     batches_per_epoch = dataset_length // (config.batch_size * config.max_seq_len)
 
+    if config.verbose:
+        print(f"Training GPT model for {config.num_epochs} epochs...")
+
     # Main training loop
     for epoch in range(config.num_epochs):
-        for step in range(batches_per_epoch):
-            inputs, targets, rng = batch_fn(
-                rng=rng,
-                tokens=train_tokens,
-                batch_size=config.batch_size,
-                seq_len=config.max_seq_len,
-            )
-            state = step_fn(graphdef, state, inputs, targets)
+        with tqdm(
+            total=batches_per_epoch,
+            desc=f"Epoch {epoch + 1}/{config.num_epochs}",
+            unit=" Batch",
+            disable=not config.verbose,
+        ) as progress:
+            for _ in range(batches_per_epoch):
+                inputs, targets, rng = batch_fn(
+                    rng=rng,
+                    tokens=train_tokens,
+                    batch_size=config.batch_size,
+                    seq_len=config.max_seq_len,
+                )
+                state = step_fn(graphdef, state, inputs, targets)
+                progress.update(1)
+
+    if config.verbose:
+        print(
+            f"Training complete after {config.num_epochs} epochs "
+            f"({config.num_epochs * batches_per_epoch} batches).\n"
+        )
 
     nnx.update((model, optimizer), state)
 
