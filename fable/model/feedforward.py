@@ -22,12 +22,12 @@ class FeedForward(nnx.Module):
     def __init__(self, embed_dim: int, rngs: nnx.Rngs = nnx.Rngs(0)) -> None:
         # Initialize weights and biases for two linear layers
         self.kernel_1 = nnx.Param(
-            0.02 * rngs.normal(shape=(embed_dim, 4 * embed_dim), dtype=jnp.float32)
+            rngs.normal(shape=(embed_dim, 4 * embed_dim), dtype=jnp.float32) * 0.02
         )
         self.bias_1 = nnx.Param(jnp.zeros(shape=(4 * embed_dim,), dtype=jnp.float32))
 
         self.kernel_2 = nnx.Param(
-            0.02 * rngs.normal(shape=(4 * embed_dim, embed_dim), dtype=jnp.float32)
+            rngs.normal(shape=(4 * embed_dim, embed_dim), dtype=jnp.float32) * 0.02
         )
         self.bias_2 = nnx.Param(jnp.zeros(shape=(embed_dim,), dtype=jnp.float32))
 
@@ -38,7 +38,12 @@ class FeedForward(nnx.Module):
         Parameters
         ----------
         x : jax.Array
-            Input array of shape (batch_size, seq_len, embed_dim).
+            Input array of shape `(batch_size, seq_len, embed_dim)`.
+
+        Returns
+        -------
+        x : jax.Array
+            Output array of shape `(batch_size, seq_len, embed_dim)`.
         """
         x = x @ self.kernel_1 + self.bias_1
         x = jax.nn.gelu(x)

@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from flax import nnx
 
 
-class SelfAttention(nnx.Module):
+class Attention(nnx.Module):
     """
     Multi-head self-attention module.
 
@@ -33,12 +33,12 @@ class SelfAttention(nnx.Module):
         self.num_heads = num_heads
         self.head_dim = embed_dim // num_heads
 
-        # Initialize projection matrices
+        # Initialize input and output projection weight matrices
         self.qkv_proj = nnx.Param(
-            0.02 * rngs.normal(shape=(embed_dim, 3 * embed_dim), dtype=jnp.float32)
+            rngs.normal(shape=(embed_dim, 3 * embed_dim), dtype=jnp.float32) * 0.02
         )
         self.out_proj = nnx.Param(
-            0.02 * rngs.normal(shape=(embed_dim, embed_dim), dtype=jnp.float32)
+            rngs.normal(shape=(embed_dim, embed_dim), dtype=jnp.float32) * 0.02
         )
 
     def __call__(self, x: jax.Array, causal: bool) -> jax.Array:
@@ -51,6 +51,11 @@ class SelfAttention(nnx.Module):
             Input array of shape (batch_size, seq_len, embed_dim).
         causal : bool
             Whether to apply a causal mask to prevent attending to future tokens.
+
+        Returns
+        -------
+        outputs : jax.Array
+            Attention layer output array of shape `(batch_size, seq_len, embed_dim)`.
 
         Notes
         -----

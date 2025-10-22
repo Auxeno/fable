@@ -5,7 +5,7 @@ Transformer building blocks and configuration utilities.
 import jax
 from flax import nnx
 
-from fable.model.attention import SelfAttention
+from fable.model.attention import Attention
 from fable.model.feedforward import FeedForward
 
 
@@ -38,7 +38,7 @@ class TransformerDecoder(nnx.Module):
         self.dropout_1 = nnx.Dropout(rate=dropout_rate, rngs=rngs)
         self.dropout_2 = nnx.Dropout(rate=dropout_rate, rngs=rngs)
 
-        self.attention = SelfAttention(embed_dim, num_heads, rngs=rngs)
+        self.attention = Attention(embed_dim, num_heads, rngs=rngs)
 
         self.feed_forward = FeedForward(embed_dim, rngs=rngs)
 

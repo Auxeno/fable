@@ -49,7 +49,7 @@ class GPT(nnx.Module):
 
         # Learnable token projection matrix
         self.embedding_matrix = nnx.Param(
-            0.02 * rngs.params.normal((vocab_size, embed_dim), dtype=jnp.float32)
+            rngs.normal(shape=(vocab_size, embed_dim), dtype=jnp.float32) * 0.02
         )
 
         self.transformer_blocks = nnx.List(
@@ -68,21 +68,15 @@ class GPT(nnx.Module):
 
         Returns
         -------
-        probs : jax.Array
+        logits : jax.Array
             Output array of shape `(batch_size, seq_len, vocab_size)` containing next
-            token probabilities.
+            token probability logits.
         """
         x = self.embedding_matrix[tokens]
-
         x += self.positional_encodings
-
         x = self.dropout(x)
-
         for block in self.transformer_blocks:
             x = block(x)
+        logits = x @ self.embedding_matrix.T
 
-        x = x @ self.embedding_matrix.T
-
-        probs = jax.nn.softmax(x, axis=-1)
-
-        return probs
+        return logits
