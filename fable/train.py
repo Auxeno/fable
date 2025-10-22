@@ -176,7 +176,7 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
 
     # JIT compile training functions
     step_fn = jax.jit(train_step, static_argnums=(0,))
-    batch_fn = jax.jit(build_batch, static_argnums=(1, 2, 3))
+    batch_fn = jax.jit(build_batch, static_argnums=(2, 3))
 
     # Each token in dataset is expected to appear once per epoch
     batches_per_epoch = dataset_length // (config.batch_size * config.max_seq_len)
