@@ -40,7 +40,7 @@ def save(
     if overwrite and checkpoint_path.exists():
         shutil.rmtree(checkpoint_path, ignore_errors=True)
 
-    # Build payload using an Orbax-friendly pure dict representation for the model state
+    # Build payload using a pure mapping so checkpoint round-trips stay portable.
     payload: dict[str, Any] = {"state": nnx.to_pure_dict(state)}
     payload["config"] = asdict(config)
 
@@ -80,21 +80,18 @@ def load(
 
     config = GPTConfig(**restored["config"])
 
-    # Build a fresh model instance and hydrate it with the restored state, which
-    # may be stored either as a pure mapping (new checkpoints) or as an
-    # nnx.State (legacy checkpoints).
+    # Build a fresh model instance and hydrate it with the restored mapping
     model = GPT(config=config, rngs=nnx.Rngs(0))
     state_payload = restored["state"]
-    if isinstance(state_payload, Mapping):
-        model_state = nnx.state(model)
-        nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
-        nnx.update(model, model_state)
-    elif isinstance(state_payload, nnx.State):
-        nnx.update(model, state_payload)
-    else:
+    if not isinstance(state_payload, Mapping):
         raise TypeError(
-            "Checkpoint state must be a mapping or nnx.State; "
+            "Checkpoint state must be a mapping produced by nnx.to_pure_dict; "
             f"got {type(state_payload)!r}"
         )
+
+    # Load pure dict state into model
+    model_state = nnx.state(model)
+    nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
+    nnx.update(model, model_state)
 
     return model, config
