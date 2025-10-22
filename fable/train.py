@@ -157,12 +157,16 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     """
     rng, key_init = jax.random.split(jax.random.PRNGKey(config.seed))
 
-    # Load dataset
+    # Load dataset from disk
     tokenized = load_tokenized_tinystories()
     train_tokens = tokenized["train"]
-    dataset_length = len(train_tokens)
 
-    # Model and optimizer setup
+    # Get dataset length, number of batches per epoch, and total optimizer steps
+    dataset_length = len(train_tokens)
+    num_batches = dataset_length // (config.batch_size * config.max_seq_len)
+    total_steps = num_batches * config.num_epochs
+
+    # Initialise GPT model from provided config
     model = GPT(
         num_layers=config.num_layers,
         embed_dim=config.embed_dim,
@@ -172,15 +176,23 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
         dropout_rate=config.dropout_rate,
         rngs=nnx.Rngs(key_init),
     )
-    optimizer = nnx.Optimizer(model, optax.adam(config.learning_rate), wrt=nnx.Param)
+
+    # Initialize optimiser using linear warmup with cosine decay scheduler
+    learning_rate = optax.warmup_cosine_decay_schedule(
+        init_value=0.0,
+        peak_value=config.learning_rate,
+        warmup_steps=int(0.01 * total_steps),
+        decay_steps=total_steps,
+        end_value=0.1 * config.learning_rate,
+    )
+    optimizer = nnx.Optimizer(model, tx=optax.adamw(learning_rate), wrt=nnx.Param)
+
+    # Separate static and stateful components (NNX functional API)
     graphdef, state = nnx.split((model, optimizer))
 
-    # JIT compile training functions
+    # JIT compile functions used in training loop
     step_fn = jax.jit(train_step, static_argnums=(0,))
     batch_fn = jax.jit(build_batch, static_argnums=(2, 3))
-
-    # Number of batches per training epoch, tokens expected to appear once per epoch
-    num_batches = dataset_length // (config.batch_size * config.max_seq_len)
 
     # Track a rolling window of batch losses for printing
     losses = deque(maxlen=100)
@@ -205,14 +217,14 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
                 # Perform training step
                 loss, state = step_fn(graphdef, state, inputs, targets)
 
-                if config.verbose:
-                    losses.append(loss.item())
-                    progress.set_postfix(loss=f"{sum(losses) / len(losses):.4f}")
+                # Display training loss in progress bar if enabled
+                losses.append(loss.item())
+                progress.set_postfix(loss=f"{sum(losses) / len(losses):.4f}")
 
     if config.verbose:
         print(
             f"Training complete after {config.num_epochs} epochs "
-            f"({config.num_epochs * num_batches} batches).\n"
+            f"({total_steps} batches).\n"
         )
 
     nnx.update((model, optimizer), state)

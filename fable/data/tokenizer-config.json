@@ -1,5 +1,5 @@
 {
-  "end_of_text_token": "<|endoftext|>",
+  "eot_token": "<|endoftext|>",
   "special_tokens": {
     "<|endoftext|>": 97
   },

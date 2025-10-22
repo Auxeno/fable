@@ -29,7 +29,7 @@ class TestTokenize:
                 "x": 9,
             },
             "special_tokens": {"<|endoftext|>": 99},
-            "end_of_text_token": "<|endoftext|>",
+            "eot_token": "<|endoftext|>",
         }
 
         assert tokenize("foo<|endoftext|>", tokenizer_config) == [1, 2, 2, 99]
@@ -51,7 +51,7 @@ class TestDetokenize:
         tokenizer_config = {
             "char_to_id": {"h": 1, "!": 2},
             "special_tokens": {"<|endoftext|>": 3},
-            "end_of_text_token": "<|endoftext|>",
+            "eot_token": "<|endoftext|>",
         }
 
         assert detokenize([1, 2, 3], tokenizer_config) == "h!<|endoftext|>"
