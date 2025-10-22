@@ -168,15 +168,7 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     total_steps = num_batches * config.num_epochs
 
     # Initialise GPT model from provided config
-    model = GPT(
-        num_layers=config.num_layers,
-        embed_dim=config.embed_dim,
-        num_heads=config.num_heads,
-        vocab_size=config.vocab_size,
-        max_seq_len=config.max_seq_len,
-        dropout_rate=config.dropout_rate,
-        rngs=nnx.Rngs(key_init),
-    )
+    model = GPT(config=config, rngs=nnx.Rngs(key_init))
 
     # Initialize optimiser using linear warmup with cosine decay scheduler
     learning_rate = optax.warmup_cosine_decay_schedule(

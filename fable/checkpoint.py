@@ -1,13 +1,15 @@
 import shutil
+from collections.abc import Mapping
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-import jax
 import orbax.checkpoint as ocp
 from absl import logging as absl_logging
 from flax import nnx
 
 from fable.config import GPTConfig
+from fable.model import GPT
 
 # Reduce verbosity of Orbax logging
 absl_logging.set_verbosity(absl_logging.ERROR)
@@ -16,14 +18,13 @@ absl_logging.set_verbosity(absl_logging.ERROR)
 def save(
     state: nnx.State,
     *,
+    config: GPTConfig,
     filename: str = "model_state.ckpt",
     folder_name: str = "checkpoints",
     path: Path | None = None,
-    rng: jax.Array | None = None,
-    config: GPTConfig | None = None,
     overwrite: bool = True,
 ) -> None:
-    """Persist the training state (and optional RNG/config) to disk."""
+    """Persist model state and configuration to disk."""
     if path is None:
         checkpoint_path = Path(folder_name) / filename
     else:
@@ -39,12 +40,9 @@ def save(
     if overwrite and checkpoint_path.exists():
         shutil.rmtree(checkpoint_path, ignore_errors=True)
 
-    # Build payload
-    payload: dict[str, Any] = {"state": state}
-    if rng is not None:
-        payload["rng"] = rng
-    if config is not None:
-        payload["config"] = config
+    # Build payload using an Orbax-friendly pure dict representation for the model state
+    payload: dict[str, Any] = {"state": nnx.to_pure_dict(state)}
+    payload["config"] = asdict(config)
 
     # Create and use AsyncCheckpointer with StandardCheckpointHandler
     ckptr = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
@@ -57,8 +55,8 @@ def load(
     filename: str = "model_state.ckpt",
     folder_name: str = "checkpoints",
     path: Path | None = None,
-) -> dict[str, Any]:
-    """Load a checkpoint dictionary from disk."""
+) -> tuple[GPT, GPTConfig]:
+    """Load a GPT model and its configuration from disk."""
     if path is None:
         checkpoint_path = Path(folder_name) / filename
     else:
@@ -74,4 +72,29 @@ def load(
 
     ckptr = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
     restored = ckptr.restore(checkpoint_path)
-    return restored
+
+    if "config" not in restored:
+        raise KeyError("Checkpoint is missing a saved GPTConfig payload.")
+    if "state" not in restored:
+        raise KeyError("Checkpoint is missing the model state payload.")
+
+    config = GPTConfig(**restored["config"])
+
+    # Build a fresh model instance and hydrate it with the restored state, which
+    # may be stored either as a pure mapping (new checkpoints) or as an
+    # nnx.State (legacy checkpoints).
+    model = GPT(config=config, rngs=nnx.Rngs(0))
+    state_payload = restored["state"]
+    if isinstance(state_payload, Mapping):
+        model_state = nnx.state(model)
+        nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
+        nnx.update(model, model_state)
+    elif isinstance(state_payload, nnx.State):
+        nnx.update(model, state_payload)
+    else:
+        raise TypeError(
+            "Checkpoint state must be a mapping or nnx.State; "
+            f"got {type(state_payload)!r}"
+        )
+
+    return model, config

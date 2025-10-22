@@ -6,56 +6,51 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
+from fable.config import GPTConfig
 from fable.model.position import sinusoidal_embeddings
 from fable.model.transformer import TransformerDecoder
 
 
 class GPT(nnx.Module):
     """
-    GPT-style autoregressive language model.
+    GPT-style autoregressive language model composed from a configuration.
 
     Parameters
     ----------
-    num_layers : int
-        Number of transformer decoder blocks.
-    embed_dim : int
-        Dimensionality of input embeddings.
-    num_heads : int
-        Number of attention heads.
-    vocab_size : int
-        Size of the vocabulary.
-    max_seq_len : int
-        Maximum sequence length.
-    dropout_rate : float, optional
-        Dropout rate to apply after embeddings.
+    config : GPTConfig
+        Hyperparameter bundle describing the model architecture.
     rngs : nnx.Rngs, optional
-        Random number generator.
+        Random number generator collection.
     """
 
     def __init__(
         self,
+        config: GPTConfig = GPTConfig(),
         *,
-        num_layers: int,
-        embed_dim: int,
-        num_heads: int,
-        vocab_size: int,
-        max_seq_len: int,
-        dropout_rate: float,
         rngs: nnx.Rngs = nnx.Rngs(0),
     ) -> None:
-        self.positional_encodings = sinusoidal_embeddings(max_seq_len, embed_dim)
-        self.dropout = nnx.Dropout(dropout_rate, rngs=rngs)
-        self.layer_norm = nnx.LayerNorm(embed_dim, rngs=rngs)
+        self.positional_encodings = sinusoidal_embeddings(
+            config.max_seq_len, config.embed_dim
+        )
+        self.dropout = nnx.Dropout(config.dropout_rate, rngs=rngs)
+        self.layer_norm = nnx.LayerNorm(config.embed_dim, rngs=rngs)
 
         # Learnable token projection matrix
         self.embedding_matrix = nnx.Param(
-            rngs.normal(shape=(vocab_size, embed_dim), dtype=jnp.float32) * 0.02
+            rngs.normal((config.vocab_size, config.embed_dim), dtype=jnp.float32) * 0.02
         )
 
         self.transformer_blocks = nnx.List(
-            TransformerDecoder(embed_dim, num_heads, dropout_rate, rngs=rngs)
-            for _ in range(num_layers)
+            TransformerDecoder(
+                config.embed_dim,
+                config.num_heads,
+                config.dropout_rate,
+                rngs=rngs,
+            )
+            for _ in range(config.num_layers)
         )
+
+        self.config = config
 
     def __call__(self, tokens: jax.Array) -> jax.Array:
         """
