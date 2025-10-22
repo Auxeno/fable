@@ -12,19 +12,19 @@ from fable.data.pipeline import load_tokenized_tinystories
 from fable.model.gpt import GPT
 
 
-def generate_batch_indices(
-    key: jax.Array,
+def sample_batch_indices(
+    rng: jax.Array,
     batch_size: int,
     seq_len: int,
     dataset_length: int,
-) -> jax.Array:
+) -> tuple[jax.Array, jax.Array]:
     """
     Draw a batch of contiguous token indices from a dataset.
 
     Parameters
     ----------
-    key : jax.Array
-        PRNG key for random number generation.
+    rng : jax.Array
+        PRNG state for random number generation.
     batch_size : int
         Number of sequences in the batch.
     seq_len : int
@@ -37,17 +37,18 @@ def generate_batch_indices(
     indices : jax.Array
         Array of shape `(batch_size, seq_len)` containing token indices.
     """
+    rng, key = jax.random.split(rng)
 
-    start_indices = jax.random.randint(
+    start = jax.random.randint(
         key,
         shape=(batch_size,),
         minval=0,
         maxval=dataset_length - seq_len + 1,
         dtype=jnp.int32,
     )
-    slices = start_indices[:, None] + jnp.arange(seq_len, dtype=jnp.int32)
+    indices = start[:, None] + jnp.arange(seq_len, dtype=jnp.int32)
 
-    return slices
+    return indices, rng
 
 
 def train_step(
@@ -129,24 +130,24 @@ def train(config: GPTConfig) -> tuple[GPT, nnx.Optimizer, nnx.State]:
     )
 
     graphdef, state = nnx.split((model, optimizer))
+
+    # JIT compile train step
     step_fn = jax.jit(train_step)
 
-    seq_len = config.max_seq_len
-    batches_per_epoch = dataset_length // (config.batch_size * seq_len)
+    # Each token in dataset is expected to appear once per epoch
+    batches_per_epoch = dataset_length // (config.batch_size * config.max_seq_len)
 
-    total_steps = config.num_epochs * batches_per_epoch
-
-    for _ in range(total_steps):
-        rng, key = jax.random.split(rng)
-        indices = generate_batch_indices(
-            key=key,
-            batch_size=config.batch_size,
-            seq_len=seq_len,
-            dataset_length=dataset_length,
-        )
-        inputs = train_tokens[indices]
-        targets = train_tokens[indices + 1]
-        state = step_fn(graphdef, state, inputs, targets)
+    for epoch in range(config.num_epochs):
+        for step in range(batches_per_epoch):
+            indices, rng = sample_batch_indices(
+                rng=rng,
+                batch_size=config.batch_size,
+                seq_len=config.max_seq_len,
+                dataset_length=dataset_length,
+            )
+            inputs = train_tokens[indices]
+            targets = train_tokens[indices + 1]
+            state = step_fn(graphdef, state, inputs, targets)
 
     nnx.update((model, optimizer), state)
 

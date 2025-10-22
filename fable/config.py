@@ -33,7 +33,7 @@ class GPTConfig:
     batch_size: int = 64
     """Batch size for training."""
 
-    num_epochs: int = 10
+    num_epochs: int = 5
     """Number of training epochs."""
 
     seed: int = 0
