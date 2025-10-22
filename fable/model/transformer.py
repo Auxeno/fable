@@ -5,8 +5,8 @@ Transformer building blocks and configuration utilities.
 import jax
 from flax import nnx
 
-from .attention import SelfAttention
-from .feedforward import FeedForward
+from fable.model.attention import SelfAttention
+from fable.model.feedforward import FeedForward
 
 
 class TransformerDecoder(nnx.Module):

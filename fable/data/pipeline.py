@@ -7,9 +7,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import jax.numpy as jnp
-from tqdm import tqdm
 
-from .tokenize import load_tokenizer_config, tokenize
+from fable.data.tokenize import load_tokenizer_config, tokenize
+from fable.utils import clean_progress, download_progress, tokenize_progress
 
 
 def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> None:
@@ -55,18 +55,12 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
         try:
             request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urlopen(request) as response, destination.open("wb") as output_file:
-                prefix = f"Downloading `{filename}`"
-
                 total_header = response.headers.get("Content-Length")
                 total_bytes = int(total_header) if total_header is not None else None
 
-                with tqdm(
-                    total=total_bytes,
-                    unit="B",
-                    unit_scale=True,
-                    desc=prefix,
-                    disable=not verbose,
-                ) as progress:
+                # Progress bar
+                desc = f"Downloading `{filename}`"
+                with download_progress(total_bytes, desc, enabled=verbose) as progress:
                     while True:
                         # 1 MiB chunks
                         chunk = response.read(1 << 20)
@@ -91,7 +85,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
 
 def clean_tinystories(*, verbose: bool = True) -> None:
     """
-    Remove TinyStories examples containing characters not present in the tokenizer's alphabet.
+    Remove TinyStories stories containing chars not present in the tokenizer's alphabet.
 
     Parameters
     ----------
@@ -137,14 +131,9 @@ def clean_tinystories(*, verbose: bool = True) -> None:
             # Buffer to accumulate lines for the current story
             line_buffer: list[str] = []
 
+            # Progress bar
             desc = f"Cleaning `{source_file.name}`"
-            with tqdm(
-                total=total_bytes,
-                unit="B",
-                unit_scale=True,
-                desc=desc,
-                disable=not verbose,
-            ) as progress:
+            with clean_progress(total_bytes, desc, enabled=verbose) as progress:
                 # Read through the whole source file
                 for line in src:
                     line_buffer.append(line)
@@ -216,14 +205,9 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
             source_file.open("r", encoding="utf-8") as src,
             destination_file.open("wb") as dst,
         ):
+            # Progress bar
             desc = f"Tokenizing `{source_file.name}`"
-            with tqdm(
-                total=total_bytes,
-                unit="B",
-                unit_scale=True,
-                desc=desc,
-                disable=not verbose,
-            ) as progress:
+            with tokenize_progress(total_bytes, desc, enabled=verbose) as progress:
                 for line in src:
                     token_ids = tokenize(line, config)
                     dst.write(bytes(token_ids))
@@ -283,7 +267,8 @@ def prepare_tinystories_dataset(
     overwrite_download : bool, optional
         Redownload files even if they already exist when `True`. Defaults to `False`.
     verbose : bool, optional
-        Prints simple progress information while running the pipeline. Defaults to `True`.
+        Prints simple progress information while running the pipeline.
+        Defaults to `True`.
     """
     download_tinystories(overwrite=overwrite_download, verbose=verbose)
     clean_tinystories(verbose=verbose)

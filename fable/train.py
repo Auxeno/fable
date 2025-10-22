@@ -6,11 +6,11 @@ import jax
 import jax.numpy as jnp
 import optax
 from flax import nnx
-from tqdm import tqdm
 
 from fable.config import GPTConfig
-from fable.data.pipeline import load_tokenized_tinystories
-from fable.model.gpt import GPT
+from fable.data import load_tokenized_tinystories
+from fable.model import GPT
+from fable.utils import train_progress
 
 
 def sample_batch_indices(
@@ -57,7 +57,7 @@ def build_batch(
     seq_len: int,
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     """
-    Sample a random batch of contiguous input–target token sequences.
+    Sample a random batch of contiguous input-target token sequences.
 
     Parameters
     ----------
@@ -168,45 +168,39 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
         dropout_rate=config.dropout_rate,
         rngs=nnx.Rngs(key_init),
     )
-    optimizer = nnx.Optimizer(
-        model,
-        optax.adam(config.learning_rate),
-        wrt=nnx.Param,
-    )
+    optimizer = nnx.Optimizer(model, optax.adam(config.learning_rate), wrt=nnx.Param)
     graphdef, state = nnx.split((model, optimizer))
 
     # JIT compile training functions
     step_fn = jax.jit(train_step, static_argnums=(0,))
     batch_fn = jax.jit(build_batch, static_argnums=(2, 3))
 
-    # Each token in dataset is expected to appear once per epoch
-    batches_per_epoch = dataset_length // (config.batch_size * config.max_seq_len)
+    # Number of batches per training epoch, tokens expected to appear once per epoch
+    num_batches = dataset_length // (config.batch_size * config.max_seq_len)
 
     if config.verbose:
         print(f"Training GPT model for {config.num_epochs} epochs...")
 
     # Main training loop
     for epoch in range(config.num_epochs):
-        with tqdm(
-            total=batches_per_epoch,
-            desc=f"Epoch {epoch + 1}/{config.num_epochs}",
-            unit=" Batch",
-            disable=not config.verbose,
-        ) as progress:
-            for _ in range(batches_per_epoch):
+        # Progress bar
+        desc = f"Epoch {epoch + 1}/{config.num_epochs}"
+        with train_progress(num_batches, desc, enabled=config.verbose) as progress:
+            for _ in progress:
+                # Load batch of data
                 inputs, targets, rng = batch_fn(
                     rng=rng,
                     tokens=train_tokens,
                     batch_size=config.batch_size,
                     seq_len=config.max_seq_len,
                 )
+                # Perform training step
                 state = step_fn(graphdef, state, inputs, targets)
-                progress.update(1)
 
     if config.verbose:
         print(
             f"Training complete after {config.num_epochs} epochs "
-            f"({config.num_epochs * batches_per_epoch} batches).\n"
+            f"({config.num_epochs * num_batches} batches).\n"
         )
 
     nnx.update((model, optimizer), state)

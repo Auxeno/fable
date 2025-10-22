@@ -6,8 +6,8 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-from .position import sinusoidal_embeddings
-from .transformer import TransformerDecoder
+from fable.model.position import sinusoidal_embeddings
+from fable.model.transformer import TransformerDecoder
 
 
 class GPT(nnx.Module):

@@ -2,14 +2,14 @@
 Data preprocessing utilities for loading corpora and tokenizing text.
 """
 
-from .pipeline import (
+from fable.data.pipeline import (
     clean_tinystories,
     download_tinystories,
     load_tokenized_tinystories,
     prepare_tinystories_dataset,
     tokenize_tinystories,
 )
-from .tokenize import detokenize, tokenize
+from fable.data.tokenize import detokenize, tokenize
 
 __all__ = [
     "download_tinystories",
