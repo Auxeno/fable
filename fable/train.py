@@ -11,6 +11,7 @@ from flax import nnx
 
 from fable.config import GPTConfig
 from fable.data import load_tokenized_tinystories
+from fable.evaluate import eval_step
 from fable.model import GPT
 from fable.utils import train_progress
 
@@ -108,7 +109,7 @@ def train_step(
     Parameters
     ----------
     graphdef : nnx.GraphDef
-        Static definition for (model, optimizer, metrics, ...).
+        Static definition for `(model, optimizer, metrics, ...)`.
     state : nnx.State
         Dynamic state tree aligned with `graphdef`.
     inputs : jax.Array
@@ -159,7 +160,7 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
 
     # Load dataset from disk
     tokenized = load_tokenized_tinystories()
-    train_tokens = tokenized["train"]
+    train_tokens, valid_tokens = tokenized["train"], tokenized["valid"]
 
     # Get dataset length, number of batches per epoch, and total optimizer steps
     dataset_length = len(train_tokens)
@@ -191,22 +192,23 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     graphdef, state = nnx.split((model, optimizer))
 
     # JIT compile functions used in training loop
-    step_fn = jax.jit(train_step, static_argnums=(0,))
     batch_fn = jax.jit(build_batch, static_argnums=(2, 3))
-
-    # Track a rolling window of batch losses for printing
-    losses = deque(maxlen=100)
+    step_fn = jax.jit(train_step, static_argnums=(0,))
+    eval_fn = jax.jit(eval_step, static_argnums=(0,))
 
     if config.verbose:
         print(f"Training GPT model for {config.num_epochs} epochs...")
 
     # Main training loop
     for epoch in range(config.num_epochs):
+        # Track a rolling window of batch losses for printing
+        train_losses, valid_losses = deque(maxlen=100), deque(maxlen=100)
+
         # Progress bar
         desc = f"Epoch {epoch + 1}/{config.num_epochs}"
         with train_progress(num_batches, desc, enabled=config.verbose) as progress:
-            for _ in progress:
-                # Load batch of data
+            for step in progress:
+                # Sample batch of training data
                 inputs, targets, rng = batch_fn(
                     rng=rng,
                     tokens=train_tokens,
@@ -214,12 +216,29 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
                     seq_len=config.max_seq_len,
                 )
 
-                # Perform training step
-                loss, state = step_fn(graphdef, state, inputs, targets)
+                # Perform training step and record loss
+                train_loss, state = step_fn(graphdef, state, inputs, targets)
+                train_losses.append(train_loss.item())
 
-                # Display training loss in progress bar if enabled
-                losses.append(loss.item())
-                progress.set_postfix(loss=f"{sum(losses) / len(losses):.4f}")
+                # Eval step every 100 train steps
+                if step % 100 == 0:
+                    # Deterministically sample batch of validation data
+                    valid_inputs, valid_targets, _ = batch_fn(
+                        rng=jax.random.PRNGKey(0),
+                        tokens=valid_tokens,
+                        batch_size=config.batch_size,
+                        seq_len=config.max_seq_len,
+                    )
+
+                    # Record validation loss
+                    valid_loss = eval_fn(graphdef, state, valid_inputs, valid_targets)
+                    valid_losses.append(valid_loss.item())
+
+                # Show losses on progress bar
+                progress.set_postfix(
+                    train_loss=f"{sum(train_losses) / len(train_losses):.4f}",
+                    valid_loss=f"{sum(valid_losses) / len(valid_losses):.4f}",
+                )
 
     if config.verbose:
         print(
