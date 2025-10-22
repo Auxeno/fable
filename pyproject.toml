@@ -11,6 +11,9 @@ requires-python = ">=3.10"
 authors = [{ name = "Alex Goddard" }]
 dependencies = [
     "jax",
+    "flax",
+    "optax",
+    "orbax-checkpoint",
     "tqdm",
 ]
 

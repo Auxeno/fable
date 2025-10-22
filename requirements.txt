@@ -1,3 +1,6 @@
-jax
 pytest
+jax
+flax
+optax
+orbax-checkpoint
 tqdm
