@@ -16,6 +16,29 @@ def predict_next_token(
     next_token_idx: int,
     temperature: float,
 ) -> tuple[jax.Array, jax.Array]:
+    """
+    Sample the next token ID from a GPT model given the current context.
+
+    Parameters
+    ----------
+    rng : jax.Array
+        RNG key used for stochastic sampling.
+    graphdef : nnx.GraphDef
+        Frozen graph definition produced by `nnx.split(model)`.
+    state : nnx.State
+        Trainable parameters paired with `graphdef`.
+    context : jax.Array
+        Batched token context of shape `(1, max_seq_len)` consumed by the model.
+    next_token_idx : int
+        Position in the sequence whose logits should be sampled.
+    temperature : float
+        Softmax temperature applied before categorical sampling.
+
+    Returns
+    -------
+    tuple[jax.Array, jax.Array]
+        The sampled token ID (shape `()`), and the updated RNG key.
+    """
     rng, key = jax.random.split(rng)
     model = nnx.merge(graphdef, state)
 
@@ -39,6 +62,22 @@ def generate_text(
     max_output_tokens: int = 10_000,
     seed: int | None = None,
 ) -> None:
+    """
+    Stream autoregressive text from a GPT model starting from a prompt.
+
+    Parameters
+    ----------
+    model : GPT
+        The autoregressive model to sample from (will be switched to eval mode).
+    story_beginning : str
+        Prompt text to seed generation; must be shorter than the model context.
+    temperature : float, optional
+        Sampling temperature; lower values make predictions more greedy.
+    max_output_tokens : int, optional
+        Maximum number of tokens to emit after the prompt before stopping.
+    seed : int | None, optional
+        RNG seed, random seed generated when omitted.
+    """
     # Infer training maximum sequence length from positional encodings
     max_seq_len = len(model.positional_encodings)
 
@@ -50,7 +89,6 @@ def generate_text(
     context_tokens: list[int] = tokenize(story_beginning, tokenizer_config)
     if not context_tokens:
         raise ValueError("`story_beginning` must contain at least one token.")
-    max_seq_len = len(model.positional_encodings)
     if len(context_tokens) >= max_seq_len:
         raise ValueError(f"Prompt longer than model context length of {max_seq_len}.")
 
