@@ -73,6 +73,7 @@ class GPT(nnx.Module):
         x = self.dropout(x)
         for block in self.transformer_blocks:
             x = block(x)
+        x = self.layer_norm(x)
         logits = x @ self.embedding_matrix.T
 
         return logits
