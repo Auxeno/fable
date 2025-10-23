@@ -128,19 +128,18 @@ def generate_text(
         if next_token.item() == eot_token:
             break
 
-        # Append next token to current sequence
-        context = context.at[0, next_token_idx].set(next_token)
+        # Shift context window if needed and write in next token
+        if next_token_idx == max_seq_len - 1:
+            context = context.at[0, 0 : max_seq_len - 1].set(context[0, 1:max_seq_len])
+            context = context.at[0, next_token_idx].set(next_token)
+        else:
+            context = context.at[0, next_token_idx].set(next_token)
+            next_token_idx += 1
 
         # Detokenize sequence for printing
         new_text = detokenize([next_token.item()], tokenizer_config)
 
         # Print current prediction in-line
         print(new_text, end="", flush=True)
-
-        # Shift context window to prevent exceeding length
-        if next_token_idx == max_seq_len - 1:
-            context = context.at[0, 0 : max_seq_len - 1].set(context[0, 1:max_seq_len])
-        else:
-            next_token_idx += 1
 
     print()
