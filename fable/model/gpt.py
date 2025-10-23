@@ -60,6 +60,7 @@ class GPT(nnx.Module):
         ----------
         tokens : jax.Array
             Input array of shape `(batch_size, seq_len)` containing integer token IDs.
+            Sequences must already be padded or truncated to `config.max_seq_len`.
 
         Returns
         -------
