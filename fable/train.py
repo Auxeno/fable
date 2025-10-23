@@ -46,7 +46,7 @@ def sample_batch_indices(
         key,
         shape=(batch_size,),
         minval=0,
-        maxval=dataset_length - seq_len + 1,
+        maxval=dataset_length - seq_len,
         dtype=jnp.int32,
     )
     indices = start[:, None] + jnp.arange(seq_len, dtype=jnp.int32)
