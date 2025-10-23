@@ -167,7 +167,6 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
         # Else read training config from model
         config = model.config
         rng = jax.random.PRNGKey(config.seed)
-        model.train()
 
     # Load dataset from disk
     tokenized = load_tokenized_tinystories()
@@ -186,7 +185,7 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
             for i in range(1, config.checkpoint_frequency + 1)
         }
 
-    # Ensure model is in training mode before optimisation
+    # Ensure model is in training mode
     model.train()
 
     # Initialize optimiser using linear warmup with cosine decay scheduler

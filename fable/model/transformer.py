@@ -6,7 +6,7 @@ import jax
 from flax import nnx
 
 from fable.model.attention import Attention
-from fable.model.feedforward import FeedForward
+from fable.model.feed_forward import FeedForward
 
 
 class TransformerDecoder(nnx.Module):
