@@ -41,3 +41,9 @@ class GPTConfig:
 
     verbose: bool = True
     """Print training progress to console."""
+
+    enable_checkpointing: bool = True
+    """Persist checkpoints during training when True."""
+
+    checkpoint_frequency: int = 10
+    """Number of evenly spaced checkpoints to save across the full training run."""

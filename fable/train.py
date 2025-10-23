@@ -9,6 +9,7 @@ import jax.numpy as jnp
 import optax
 from flax import nnx
 
+from fable.checkpoint import save
 from fable.config import GPTConfig
 from fable.data import load_tokenized_tinystories
 from fable.evaluate import eval_step
@@ -162,10 +163,18 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
     tokenized = load_tokenized_tinystories()
     train_tokens, valid_tokens = tokenized["train"], tokenized["valid"]
 
-    # Get dataset length, number of batches per epoch, and total optimizer steps
+    # Get dataset length, number of gradient steps per epoch, and total optimizer steps
     dataset_length = len(train_tokens)
-    num_batches = dataset_length // (config.batch_size * config.max_seq_len)
-    total_steps = num_batches * config.num_epochs
+    epoch_steps = dataset_length // (config.batch_size * config.max_seq_len)
+    total_steps = epoch_steps * config.num_epochs
+
+    # Compute checkpoint schedule if enabled
+    checkpoint_steps = set()
+    if config.enable_checkpointing and config.checkpoint_frequency > 0:
+        checkpoint_steps = {
+            (total_steps * i) // config.checkpoint_frequency
+            for i in range(1, config.checkpoint_frequency + 1)
+        }
 
     # Initialise GPT model from provided config
     model = GPT(config=config, rngs=nnx.Rngs(key_init))
@@ -198,7 +207,7 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
 
         # Progress bar
         desc = f"Epoch {epoch + 1}/{config.num_epochs}"
-        with train_progress(num_batches, desc, enabled=config.verbose) as progress:
+        with train_progress(epoch_steps, desc, enabled=config.verbose) as progress:
             for step in progress:
                 # Sample batch of training data
                 inputs, targets, rng = batch_fn(
@@ -231,6 +240,15 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
                     train_loss=f"{sum(train_losses) / len(train_losses):.4f}",
                     valid_loss=f"{sum(valid_losses) / len(valid_losses):.4f}",
                 )
+
+                # Save checkpoints at configured milestones
+                if (global_step := step + 1 + epoch * epoch_steps) in checkpoint_steps:
+                    model_snapshot, _ = nnx.merge(graphdef, state)
+                    save(
+                        nnx.state(model_snapshot),
+                        config=config,
+                        filename=f"model_step_{global_step}.ckpt",
+                    )
 
     if config.verbose:
         print(
