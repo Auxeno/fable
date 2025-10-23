@@ -24,7 +24,26 @@ def save(
     path: Path | None = None,
     overwrite: bool = True,
 ) -> None:
-    """Persist model state and configuration to disk."""
+    """
+    Saves an `nnx.State` and its configuration to disk using Orbax.
+
+    Parameters
+    ----------
+    state : nnx.State
+        Variable state extracted from a GPT model.
+    config : GPTConfig
+        Hyperparameters used to build the model.
+    filename : str, optional
+        Checkpoint filename. Defaults to `"model_state.ckpt"`.
+    folder_name : str, optional
+        Directory where checkpoints are stored. Defaults to `"checkpoints"`.
+    path : pathlib.Path, optional
+        Full path to the checkpoint directory. Overrides `folder_name` and
+        `filename` when provided.
+    overwrite : bool, optional
+        Whether to remove an existing checkpoint at the same path. Defaults to
+        `True`.
+    """
     if path is None:
         checkpoint_path = Path(folder_name) / filename
     else:
@@ -56,7 +75,34 @@ def load(
     folder_name: str = "checkpoints",
     path: Path | None = None,
 ) -> tuple[GPT, GPTConfig]:
-    """Load a GPT model and its configuration from disk."""
+    """
+    Restore a GPT model and configuration from a saved checkpoint.
+
+    Parameters
+    ----------
+    filename : str, optional
+        Checkpoint filename. Defaults to `"model_state.ckpt"`.
+    folder_name : str, optional
+        Directory where checkpoints are stored. Defaults to `"checkpoints"`.
+    path : pathlib.Path, optional
+        Full path to the checkpoint directory. Overrides `folder_name` and
+        `filename` when provided.
+
+    Returns
+    -------
+    tuple[GPT, GPTConfig]
+        The restored model instance and its configuration.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the checkpoint path does not exist.
+    KeyError
+        If the checkpoint is missing the expected payload keys.
+    TypeError
+        If the stored state payload is not a mapping produced by
+        `nnx.to_pure_dict`.
+    """
     if path is None:
         checkpoint_path = Path(folder_name) / filename
     else:
@@ -89,7 +135,7 @@ def load(
             f"got {type(state_payload)!r}"
         )
 
-    # Load pure dict state into model
+    # Hydrate the model with the checkpoint contents.
     model_state = nnx.state(model)
     nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
     nnx.update(model, model_state)
