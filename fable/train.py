@@ -143,21 +143,31 @@ def train_step(
     return loss, new_state
 
 
-def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.State]:
+def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
     """
     Run a simple training loop over the TinyStories dataset.
 
     Parameters
     ----------
-    config : GPTConfig, optional
-        Model and optimization hyperparameters.
+    model : GPT, optional
+        The model to train. When omitted a new instance is created from
+        `GPTConfig()`.
 
     Returns
     -------
     tuple[GPT, nnx.Optimizer, nnx.State]
         Trained model, optimizer, and latest NNX state tree.
     """
-    rng, key_init = jax.random.split(jax.random.PRNGKey(config.seed))
+    if model is None:
+        # Initialise a model if not provided
+        config = GPTConfig()
+        rng, key_init = jax.random.split(jax.random.PRNGKey(config.seed))
+        model = GPT(config=config, rngs=nnx.Rngs(key_init))
+    else:
+        # Else read training config from model
+        config = model.config
+        rng = jax.random.PRNGKey(config.seed)
+        model.train()
 
     # Load dataset from disk
     tokenized = load_tokenized_tinystories()
@@ -176,8 +186,8 @@ def train(config: GPTConfig = GPTConfig()) -> tuple[GPT, nnx.Optimizer, nnx.Stat
             for i in range(1, config.checkpoint_frequency + 1)
         }
 
-    # Initialise GPT model from provided config
-    model = GPT(config=config, rngs=nnx.Rngs(key_init))
+    # Ensure model is in training mode before optimisation
+    model.train()
 
     # Initialize optimiser using linear warmup with cosine decay scheduler
     learning_rate = optax.warmup_cosine_decay_schedule(
