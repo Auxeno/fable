@@ -45,8 +45,8 @@ def predict_next_token(
     # Predict next token for all tokens in sequence
     logits = model(context)
 
-    # Index next token logits
-    next_token_logits = logits[0, next_token_idx, :] / jnp.maximum(temperature, 1e-5)
+    # Index current token logits, which predict the next token distribution
+    next_token_logits = logits[0, next_token_idx - 1] / jnp.maximum(temperature, 1e-5)
 
     # Sample next token
     next_token = jax.random.categorical(key, next_token_logits)
