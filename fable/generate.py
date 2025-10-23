@@ -13,7 +13,7 @@ def predict_next_token(
     graphdef: nnx.GraphDef,
     state: nnx.State,
     context: jax.Array,
-    next_token_idx: int,
+    last_token_idx: int,
     temperature: float,
 ) -> tuple[jax.Array, jax.Array]:
     """
@@ -29,8 +29,8 @@ def predict_next_token(
         Trainable parameters paired with `graphdef`.
     context : jax.Array
         Batched token context of shape `(1, max_seq_len)` consumed by the model.
-    next_token_idx : int
-        Position in the sequence whose logits should be sampled.
+    last_token_idx : int
+        Index of the most recent token available in the context.
     temperature : float
         Softmax temperature applied before categorical sampling.
 
@@ -46,7 +46,7 @@ def predict_next_token(
     logits = model(context)
 
     # Index current token logits, which predict the next token distribution
-    next_token_logits = logits[0, next_token_idx - 1] / jnp.maximum(temperature, 1e-5)
+    next_token_logits = logits[0, last_token_idx, :] / jnp.maximum(temperature, 1e-5)
 
     # Sample next token
     next_token = jax.random.categorical(key, next_token_logits)
@@ -95,7 +95,7 @@ def generate_text(
     # Create initial context, padding tokens beyond initial sequence with zeros
     context = jnp.zeros((1, max_seq_len), dtype=jnp.int32)
     context = context.at[0, : len(context_tokens)].set(jnp.array(context_tokens))
-    next_token_idx = len(context_tokens)
+    last_token_idx = len(context_tokens) - 1
 
     # Seed RNG
     if seed is None:
@@ -120,7 +120,7 @@ def generate_text(
             graphdef=graphdef,
             state=state,
             context=context,
-            next_token_idx=next_token_idx,
+            last_token_idx=last_token_idx,
             temperature=temperature,
         )
 
@@ -128,13 +128,13 @@ def generate_text(
         if next_token.item() == eot_token:
             break
 
-        # Shift context window if needed and write in next token
-        if next_token_idx == max_seq_len - 1:
-            context = context.at[0, 0 : max_seq_len - 1].set(context[0, 1:max_seq_len])
-            context = context.at[0, next_token_idx].set(next_token)
+        # Write into next position in context window
+        if last_token_idx < max_seq_len - 1:
+            context = context.at[0, last_token_idx + 1].set(next_token)
+            last_token_idx += 1
         else:
-            context = context.at[0, next_token_idx].set(next_token)
-            next_token_idx += 1
+            context = context.at[0, 0 : max_seq_len - 1].set(context[0, 1:max_seq_len])
+            context = context.at[0, -1].set(next_token)
 
         # Detokenize sequence for printing
         new_text = detokenize([next_token.item()], tokenizer_config)
