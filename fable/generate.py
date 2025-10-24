@@ -1,5 +1,6 @@
 import argparse
 import random
+import time
 
 import jax
 import jax.numpy as jnp
@@ -60,8 +61,9 @@ def generate_text(
     model: GPT,
     story_beginning: str,
     *,
-    temperature: float = 1.0,
+    temperature: float = 0.6,
     max_output_tokens: int = 5_000,
+    chars_per_second: float = 70.0,
     seed: int | None = None,
 ) -> None:
     """
@@ -77,6 +79,8 @@ def generate_text(
         Sampling temperature; lower values make predictions more greedy.
     max_output_tokens : int, optional
         Maximum number of tokens to emit after the prompt before stopping.
+    chars_per_second : float, optional
+        Target characters-per-second rate for console output throttling.
     seed : int | None, optional
         RNG seed, random seed generated when omitted.
     """
@@ -114,6 +118,10 @@ def generate_text(
     # Print story beginning
     print(story_beginning, end="", flush=True)
 
+    # Configure pacing for console output
+    seconds_per_char = 1.0 / chars_per_second
+    next_print_time = time.monotonic()
+
     # Main inference loop
     for _ in range(max_output_tokens):
         # Predict next token for current sequence
@@ -142,7 +150,11 @@ def generate_text(
         new_text = detokenize([next_token.item()], tokenizer_config)
 
         # Print current prediction in-line
+        delay = next_print_time - time.monotonic()
+        if delay > 0:
+            time.sleep(delay)
         print(new_text, end="", flush=True)
+        next_print_time += seconds_per_char
 
     print()
 
@@ -165,14 +177,20 @@ def main() -> None:
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.8,
-        help="Sampling temperature (default: 0.8).",
+        default=0.7,
+        help="Sampling temperature (default: 0.6).",
     )
     parser.add_argument(
         "--max-tokens",
         type=int,
         default=5_000,
         help="Maximum number of tokens to generate after the prompt (default: 5000).",
+    )
+    parser.add_argument(
+        "--cps",
+        type=float,
+        default=70.0,
+        help="Target characters-per-second rate for console output (default: 70).",
     )
     parser.add_argument(
         "--seed",
@@ -200,6 +218,7 @@ def main() -> None:
         temperature=args.temperature,
         max_output_tokens=args.max_tokens,
         seed=args.seed,
+        chars_per_second=args.cps,
     )
 
 
