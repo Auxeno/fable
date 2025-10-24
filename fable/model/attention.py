@@ -75,10 +75,10 @@ class Attention(nnx.Module):
         # Scaled dot product attention (B, H, S, S)
         attention_logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(self.head_dim)
 
-        # Apply causal mask to block attention to future positions (B, H, S, S)
+        # Broadcast causal mask to block attention to future positions (B, H, S, S)
         causal_mask = jnp.where(
             causal,
-            -1e9 * jnp.triu(jnp.ones_like(attention_logits), k=1),
+            -1e9 * jnp.triu(jnp.ones((1, 1, seq_len, seq_len), dtype=jnp.float32), k=1),
             0.0,
         )
         attention_logits += causal_mask
