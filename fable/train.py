@@ -244,11 +244,11 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
                     valid_loss = eval_fn(graphdef, state, valid_inputs, valid_targets)
                     valid_losses.append(valid_loss.item())
 
-                # Show losses on progress bar
-                progress.set_postfix(
-                    train_loss=f"{sum(train_losses) / len(train_losses):.4f}",
-                    valid_loss=f"{sum(valid_losses) / len(valid_losses):.4f}",
-                )
+                    # Show losses on progress bar
+                    progress.set_postfix(
+                        train_loss=f"{sum(train_losses) / len(train_losses):.4f}",
+                        valid_loss=f"{sum(valid_losses) / len(valid_losses):.4f}",
+                    )
 
                 # Save checkpoints at configured milestones
                 if (global_step := step + 1 + epoch * epoch_steps) in checkpoint_steps:
