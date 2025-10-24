@@ -7,7 +7,7 @@ data/clean/*
 data/tokenized/*
 !data/tokenized/.gitkeep
 checkpoints/*
-!checkpoints/.gitkeep
+!checkpoints/demo.ckpt
 *.ipynb
 !/notebooks/*.ipynb
 todo.md
