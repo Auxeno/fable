@@ -9,13 +9,13 @@ from fable.data.tokenize import get_vocabulary_size
 
 @dataclass(frozen=True)
 class GPTConfig:
-    num_layers: int = 6
+    num_layers: int = 4
     """Number of transformer decoder layers."""
 
-    embed_dim: int = 384
+    embed_dim: int = 128
     """Dimensionality of input embeddings."""
 
-    num_heads: int = 6
+    num_heads: int = 4
     """Number of attention heads."""
 
     vocab_size: int = get_vocabulary_size()
@@ -24,10 +24,10 @@ class GPTConfig:
     max_seq_len: int = 192
     """Maximum sequence length."""
 
-    dropout_rate: float = 0.2
+    dropout_rate: float = 0.1
     """Dropout rate to apply after embeddings and transformer blocks."""
 
-    learning_rate: float = 3e-4
+    learning_rate: float = 5e-4
     """Learning rate for the optimizer."""
 
     batch_size: int = 64
