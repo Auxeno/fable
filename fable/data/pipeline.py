@@ -2,6 +2,7 @@
 Utilities for downloading and preparing the TinyStories dataset.
 """
 
+import argparse
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -273,3 +274,47 @@ def prepare_tinystories_dataset(
     download_tinystories(overwrite=overwrite_download, verbose=verbose)
     clean_tinystories(verbose=verbose)
     tokenize_tinystories(verbose=verbose)
+
+
+def main() -> None:
+    """Simple command-line entry point for dataset preparation."""
+    parser = argparse.ArgumentParser(
+        description="Download and preprocess the TinyStories dataset."
+    )
+    parser.add_argument(
+        "--stage",
+        choices=("all", "download", "clean", "tokenize"),
+        default="all",
+        help="Which stage of the pipeline to run (default: all).",
+    )
+    parser.add_argument(
+        "--overwrite-download",
+        action="store_true",
+        help="Redownload raw files even if they already exist.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress progress output.",
+    )
+    args = parser.parse_args()
+
+    verbose = not args.quiet
+
+    if args.stage == "all":
+        prepare_tinystories_dataset(
+            overwrite_download=args.overwrite_download,
+            verbose=verbose,
+        )
+        return
+
+    if args.stage == "download":
+        download_tinystories(overwrite=args.overwrite_download, verbose=verbose)
+    elif args.stage == "clean":
+        clean_tinystories(verbose=verbose)
+    elif args.stage == "tokenize":
+        tokenize_tinystories(verbose=verbose)
+
+
+if __name__ == "__main__":
+    main()

@@ -11,3 +11,4 @@ checkpoints/*
 *.ipynb
 !/notebooks/*.ipynb
 todo.md
+fable.egg-info

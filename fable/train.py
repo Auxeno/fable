@@ -2,7 +2,10 @@
 Model training logic and utilities.
 """
 
+import argparse
 from collections import deque
+from dataclasses import replace
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -268,3 +271,82 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
     nnx.update((model, optimizer), state)
 
     return model, optimizer, state
+
+
+def main() -> None:
+    """Simple command-line entry point for model training."""
+    parser = argparse.ArgumentParser(description="Train a Fable GPT model.")
+    parser.add_argument("--num-epochs", type=int, help="Number of training epochs.")
+    parser.add_argument("--batch-size", type=int, help="Mini-batch size.")
+    parser.add_argument("--max-seq-len", type=int, help="Maximum sequence length.")
+    parser.add_argument("--learning-rate", type=float, help="Optimizer learning rate.")
+    parser.add_argument("--seed", type=int, help="Random seed used for initialisation.")
+    parser.add_argument(
+        "--checkpoint-frequency",
+        type=int,
+        help="How many checkpoints to save across the training run.",
+    )
+    parser.add_argument(
+        "--disable-checkpointing",
+        action="store_true",
+        help="Disable intermediate checkpointing.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress progress output.",
+    )
+    parser.add_argument(
+        "--output",
+        default="checkpoints/latest.ckpt",
+        help="Path for the final checkpoint (default: checkpoints/latest.ckpt).",
+    )
+    parser.add_argument(
+        "--no-save",
+        action="store_true",
+        help="Skip writing the final checkpoint to disk.",
+    )
+
+    args = parser.parse_args()
+
+    config = GPTConfig()
+    if args.num_epochs is not None:
+        config = replace(config, num_epochs=args.num_epochs)
+    if args.batch_size is not None:
+        config = replace(config, batch_size=args.batch_size)
+    if args.max_seq_len is not None:
+        config = replace(config, max_seq_len=args.max_seq_len)
+    if args.learning_rate is not None:
+        config = replace(config, learning_rate=args.learning_rate)
+    if args.seed is not None:
+        config = replace(config, seed=args.seed)
+    if args.disable_checkpointing:
+        config = replace(config, enable_checkpointing=False)
+    elif args.checkpoint_frequency is not None:
+        config = replace(config, checkpoint_frequency=args.checkpoint_frequency)
+    if args.quiet:
+        config = replace(config, verbose=False)
+
+    rng = jax.random.PRNGKey(config.seed)
+    model = GPT(config=config, rngs=nnx.Rngs(rng))
+
+    trained_model, _, _ = train(model=model)
+
+    if not args.no_save:
+        checkpoint_path = Path(args.output)
+        save(
+            nnx.state(trained_model),
+            config=trained_model.config,
+            path=checkpoint_path,
+        )
+
+        resolved = checkpoint_path.with_suffix(".ckpt").resolve()
+        try:
+            display_path = resolved.relative_to(Path.cwd())
+        except ValueError:
+            display_path = resolved
+        print(f"Final checkpoint saved to `{display_path.as_posix()}`.")
+
+
+if __name__ == "__main__":
+    main()

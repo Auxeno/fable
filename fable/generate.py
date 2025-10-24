@@ -1,9 +1,11 @@
+import argparse
 import random
 
 import jax
 import jax.numpy as jnp
 from flax import nnx
 
+from fable.checkpoint import load
 from fable.data.tokenize import detokenize, load_tokenizer_config, tokenize
 from fable.model import GPT
 
@@ -59,7 +61,7 @@ def generate_text(
     story_beginning: str,
     *,
     temperature: float = 1.0,
-    max_output_tokens: int = 10_000,
+    max_output_tokens: int = 5_000,
     seed: int | None = None,
 ) -> None:
     """
@@ -143,3 +145,63 @@ def generate_text(
         print(new_text, end="", flush=True)
 
     print()
+
+
+def main() -> None:
+    """Command-line entry point for text generation."""
+    parser = argparse.ArgumentParser(
+        description="Stream text from a Fable GPT checkpoint."
+    )
+    parser.add_argument(
+        "--prompt",
+        "-p",
+        help="Prompt text to seed generation. Reads from stdin when omitted.",
+    )
+    parser.add_argument(
+        "--checkpoint",
+        default="demo.ckpt",
+        help="Checkpoint filename stored under the checkpoints directory.",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.8,
+        help="Sampling temperature (default: 0.8).",
+    )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=5_000,
+        help="Maximum number of tokens to generate after the prompt (default: 5000).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional RNG seed for reproducible sampling.",
+    )
+
+    args = parser.parse_args()
+
+    prompt = args.prompt
+    if prompt is None:
+        try:
+            prompt = input("Prompt: ").strip()
+        except EOFError:
+            prompt = ""
+
+    if not prompt:
+        raise SystemExit("A non-empty prompt is required to generate text.")
+
+    model, _ = load(filename=args.checkpoint)
+    generate_text(
+        model=model,
+        story_beginning=prompt,
+        temperature=args.temperature,
+        max_output_tokens=args.max_tokens,
+        seed=args.seed,
+    )
+
+
+if __name__ == "__main__":
+    main()

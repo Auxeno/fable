@@ -24,6 +24,11 @@ dev = [
     "pytest",
 ]
 
+[project.scripts]
+fable-generate = "fable.generate:main"
+fable-train = "fable.train:main"
+fable-prepare-data = "fable.data.pipeline:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["fable*"]
