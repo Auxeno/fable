@@ -34,10 +34,12 @@ def eval_step(
     """
     model, _ = nnx.merge(graphdef, state)
 
+    model.eval()
     logits = model(inputs)
     loss = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits,
         labels=targets,
     ).mean()
+    model.train()
 
     return loss
