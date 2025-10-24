@@ -69,7 +69,7 @@ def train_progress(
         range(total),
         total=total,
         desc="Training" if desc is None else desc,
-        unit="batch",
+        unit=" batch",
         leave=True,
         disable=not enabled,
     )
