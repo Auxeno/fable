@@ -71,7 +71,7 @@ def build_batch(
     rng : jax.Array
         PRNG key for random number generation.
     tokens : jax.Array
-        Tokenized dataset as a 1-D array of integer token IDs.
+        Tokenised dataset as a 1-D array of integer token IDs.
     batch_size : int
         Number of sequences to sample per batch.
     seq_len : int
@@ -108,12 +108,12 @@ def train_step(
     targets: jax.Array,
 ) -> tuple[jax.Array, nnx.State]:
     """
-    Run a single optimization step.
+    Run a single optimisetion step.
 
     Parameters
     ----------
     graphdef : nnx.GraphDef
-        Static definition for `(model, optimizer, metrics, ...)`.
+        Static definition for `(model, optimiser, metrics, ...)`.
     state : nnx.State
         Dynamic state tree aligned with `graphdef`.
     inputs : jax.Array
@@ -126,7 +126,7 @@ def train_step(
     loss : jax.Array
         Scalar training loss for the current batch.
     new_state : nnx.State
-        Updated state containing model and optimizer mutations.
+        Updated state containing model and optimiser mutations.
     """
     model, optimizer = nnx.merge(graphdef, state)
 
@@ -175,7 +175,7 @@ def train(model: GPT | None = None) -> GPT:
     tokenized = load_tokenized_tinystories()
     train_tokens, valid_tokens = tokenized["train"], tokenized["valid"]
 
-    # Get dataset length, number of gradient steps per epoch, and total optimizer steps
+    # Get dataset length, number of gradient steps per epoch, and total optimiser steps
     dataset_length = len(train_tokens)
     epoch_steps = dataset_length // (config.batch_size * config.max_seq_len)
     total_steps = epoch_steps * config.num_epochs
@@ -191,7 +191,7 @@ def train(model: GPT | None = None) -> GPT:
     # Ensure model is in training mode
     model.train()
 
-    # Initialize optimiser using linear warmup with cosine decay scheduler
+    # Initialise optimiser using linear warmup with cosine decay scheduler
     learning_rate = optax.warmup_cosine_decay_schedule(
         init_value=0.0,
         peak_value=config.learning_rate,
@@ -275,7 +275,7 @@ def main() -> None:
     parser.add_argument("--num-epochs", type=int, help="Number of training epochs.")
     parser.add_argument("--batch-size", type=int, help="Mini-batch size.")
     parser.add_argument("--max-seq-len", type=int, help="Maximum sequence length.")
-    parser.add_argument("--learning-rate", type=float, help="Optimizer learning rate.")
+    parser.add_argument("--learning-rate", type=float, help="Optimiser learning rate.")
     parser.add_argument("--seed", type=int, help="Random seed used for initialisation.")
     parser.add_argument(
         "--checkpoint-frequency",

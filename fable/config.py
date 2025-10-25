@@ -28,7 +28,7 @@ class GPTConfig:
     """Dropout rate to apply after embeddings and transformer blocks."""
 
     learning_rate: float = 5e-4
-    """Learning rate for the optimizer."""
+    """Learning rate for the optimiser."""
 
     batch_size: int = 64
     """Batch size for training."""

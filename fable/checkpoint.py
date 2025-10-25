@@ -8,8 +8,8 @@ import orbax.checkpoint as ocp
 from absl import logging as absl_logging
 from flax import nnx
 
-from fable.model import GPT
 from fable.config import GPTConfig
+from fable.model import GPT
 
 # Reduce verbosity of Orbax logging
 absl_logging.set_verbosity(absl_logging.ERROR)

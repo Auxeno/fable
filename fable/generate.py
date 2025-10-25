@@ -97,7 +97,7 @@ def generate_text(
     tokenizer_config = load_tokenizer_config()
     eot_token = tokenizer_config["special_tokens"][tokenizer_config["eot_token"]]
 
-    # Tokenize story beginning
+    # Tokenise story beginning
     context_tokens: list[int] = tokenize(start, tokenizer_config)
     if not context_tokens:
         raise ValueError("`start` must contain at least one token.")
@@ -152,7 +152,7 @@ def generate_text(
             context = context.at[0, 0 : max_seq_len - 1].set(context[0, 1:max_seq_len])
             context = context.at[0, -1].set(next_token)
 
-        # Detokenize sequence for printing
+        # Detokenise sequence for printing
         new_text = detokenize([next_token.item()], tokenizer_config)
 
         # Print current prediction in-line

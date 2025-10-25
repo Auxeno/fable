@@ -86,7 +86,7 @@ def download_tinystories(*, overwrite: bool = False, verbose: bool = True) -> No
 
 def clean_tinystories(*, verbose: bool = True) -> None:
     """
-    Remove TinyStories stories containing chars not present in the tokenizer's alphabet.
+    Remove TinyStories stories containing chars not present in the tokeniser's alphabet.
 
     Parameters
     ----------
@@ -101,7 +101,7 @@ def clean_tinystories(*, verbose: bool = True) -> None:
     destination_dir = repo_root / "data" / "clean"
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load tokenizer configuration
+    # Load tokeniser configuration
     config = load_tokenizer_config()
     char_to_id: dict[str, int] = config["char_to_id"]
     valid_characters: set[str] = set(char_to_id.keys())
@@ -110,7 +110,7 @@ def clean_tinystories(*, verbose: bool = True) -> None:
 
     if eot_token not in special_tokens:
         raise KeyError(
-            "Tokenizer config must register the end-of-text token as a special token."
+            "Tokeniser config must register the end-of-text token as a special token."
         )
 
     if verbose:
@@ -167,7 +167,7 @@ def clean_tinystories(*, verbose: bool = True) -> None:
 
 def tokenize_tinystories(*, verbose: bool = True) -> None:
     """
-    Tokenize cleaned TinyStories text files and persist the encoded bytes to disk.
+    Tokenise cleaned TinyStories text files and persist the encoded bytes to disk.
 
     Parameters
     ----------
@@ -185,11 +185,11 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
 
     if eot_token not in special_tokens:
         raise KeyError(
-            "Tokenizer config must include the end-of-text token in `special_tokens`."
+            "Tokeniser config must include the end-of-text token in `special_tokens`."
         )
 
     if verbose:
-        print("Tokenizing TinyStories dataset...")
+        print("Tokenising TinyStories dataset...")
 
     for split in ("train", "valid"):
         source_file = source_dir / f"tinystories-{split}.txt"
@@ -198,7 +198,7 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
         if not source_file.exists():
             raise FileNotFoundError(
                 f"Clean TinyStories split `{source_file.as_posix()}` not found. "
-                "Run `clean_tinystories` before tokenizing."
+                "Run `clean_tinystories` before tokenising."
             )
 
         total_bytes = source_file.stat().st_size
@@ -207,7 +207,7 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
             destination_file.open("wb") as dst,
         ):
             # Progress bar
-            desc = f"Tokenizing `{source_file.name}`"
+            desc = f"Tokenising `{source_file.name}`"
             with tokenize_progress(total_bytes, desc, enabled=verbose) as progress:
                 for line in src:
                     token_ids = tokenize(line, config)
@@ -229,7 +229,7 @@ def tokenize_tinystories(*, verbose: bool = True) -> None:
 
 def load_tokenized_tinystories() -> dict[str, jnp.ndarray]:
     """
-    Load tokenized TinyStories splits from disk into JAX arrays.
+    Load tokenised TinyStories splits from disk into JAX arrays.
 
     Returns
     -------
@@ -239,13 +239,13 @@ def load_tokenized_tinystories() -> dict[str, jnp.ndarray]:
     repo_root = Path(__file__).resolve().parents[2]
     token_dir = repo_root / "data" / "tokenized"
 
-    # Load tokenized splits
+    # Load tokenised splits
     arrays: dict[str, jnp.ndarray] = {}
     for split in ("train", "valid"):
         token_file = token_dir / f"tinystories-{split}.bin"
         if not token_file.exists():
             raise FileNotFoundError(
-                f"Tokenized TinyStories split `{token_file.as_posix()}` not found. "
+                f"Tokenised TinyStories split `{token_file.as_posix()}` not found. "
                 "Run `tokenize_tinystories` before loading tokens."
             )
 
@@ -261,7 +261,7 @@ def prepare_tinystories_dataset(
     verbose: bool = True,
 ) -> None:
     """
-    Run the full TinyStories data pipeline: download, clean, and tokenize.
+    Run the full TinyStories data pipeline: download, clean, and tokenise.
 
     Parameters
     ----------

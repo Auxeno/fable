@@ -22,12 +22,12 @@ def load_tokenizer_config() -> dict:
 
 def get_vocabulary_size() -> int:
     """
-    Compute the tokenizer vocabulary size from the JSON configuration.
+    Compute the tokeniser vocabulary size from the JSON configuration.
 
     Returns
     -------
     int
-        The total number of token IDs defined by the tokenizer.
+        The total number of token IDs defined by the tokeniser.
     """
     config = load_tokenizer_config()
     special_tokens: dict[str, int] = config.get("special_tokens", {})
@@ -36,14 +36,14 @@ def get_vocabulary_size() -> int:
 
 def tokenize(text: str, tokenizer_config: dict) -> list[int]:
     """
-    Tokenize a string of text into a sequence of integers IDs.
+    Tokenise a string of text into a sequence of integers IDs.
 
     Parameters
     ----------
     text : str
-        The input text to tokenize.
+        The input text to tokenise.
     tokenizer_config : dict
-        The tokenizer config dictionary, as returned by `load_tokenizer_config()`.
+        The tokeniser config dictionary, as returned by `load_tokenizer_config()`.
     """
     # Build mapping from character to ID
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
@@ -63,7 +63,7 @@ def tokenize(text: str, tokenizer_config: dict) -> list[int]:
                 token_ids.append(char_to_id[char])
             except KeyError as exc:
                 raise ValueError(
-                    f"Character {char!r} missing from tokenizer vocabulary."
+                    f"Character {char!r} missing from tokeniser vocabulary."
                 ) from exc
         return token_ids
 
@@ -86,7 +86,7 @@ def tokenize(text: str, tokenizer_config: dict) -> list[int]:
             token_ids.append(char_to_id[char])
         except KeyError as exc:
             raise ValueError(
-                f"Character {char!r} missing from tokenizer vocabulary."
+                f"Character {char!r} missing from tokeniser vocabulary."
             ) from exc
         index += 1
 
@@ -102,7 +102,7 @@ def detokenize(token_ids: Sequence[int], tokenizer_config: dict) -> str:
     token_ids : Sequence[int]
         The sequence of token IDs to convert back into text.
     tokenizer_config : dict
-        The tokenizer config dictionary, as returned by `load_tokenizer_config()`.
+        The tokeniser config dictionary, as returned by `load_tokenizer_config()`.
     """
     # Build reverse mapping from ID to character
     char_to_id: dict[str, int] = tokenizer_config["char_to_id"]
@@ -120,7 +120,7 @@ def detokenize(token_ids: Sequence[int], tokenizer_config: dict) -> str:
             characters.append(id_to_symbol[token_id])
         except KeyError as exc:
             raise ValueError(
-                f"Token ID {token_id} missing from tokenizer vocabulary."
+                f"Token ID {token_id} missing from tokeniser vocabulary."
             ) from exc
 
     return "".join(characters)

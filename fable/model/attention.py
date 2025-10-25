@@ -18,7 +18,7 @@ class Attention(nnx.Module):
     num_heads : int
         Number of attention heads.
     rngs : nnx.Rngs, optional
-        Random number generator for parameter initialization.
+        Random number generator for parameter initialisetion.
     """
 
     def __init__(
@@ -33,7 +33,7 @@ class Attention(nnx.Module):
         self.num_heads = num_heads
         self.head_dim = embed_dim // num_heads
 
-        # Initialize input and output projection weight matrices
+        # Initialise input and output projection weight matrices
         self.qkv_proj = nnx.Param(
             rngs.normal(shape=(embed_dim, 3 * embed_dim), dtype=jnp.float32) * 0.02
         )
@@ -83,7 +83,7 @@ class Attention(nnx.Module):
         )
         attention_logits += causal_mask
 
-        # Normalize attention weights across key positions (B, H, S, S)
+        # Normalise attention weights across key positions (B, H, S, S)
         attention_weights = jax.nn.softmax(attention_logits, axis=-1)
 
         # Weigh value vectors by attention scores (B, H, S, D)

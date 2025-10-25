@@ -16,11 +16,11 @@ class FeedForward(nnx.Module):
     embed_dim : int
         Dimensionality of input embeddings.
     rngs : nnx.Rngs, optional
-        Random number generator for parameter initialization.
+        Random number generator for parameter initialisetion.
     """
 
     def __init__(self, embed_dim: int, rngs: nnx.Rngs = nnx.Rngs(0)) -> None:
-        # Initialize weights and biases for two linear layers
+        # Initialise weights and biases for two linear layers
         self.kernel_1 = nnx.Param(
             rngs.normal(shape=(embed_dim, 4 * embed_dim), dtype=jnp.float32) * 0.02
         )

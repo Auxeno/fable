@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fable"
 version = "0.1.0"
-description = "Educational, from-scratch JAX GPT stack trained on the TinyStories dataset."
+description = "A  compact storytelling language model implemented from scratch using JAX and Flax NNX."
 readme = "readme.md"
 requires-python = ">=3.10"
 authors = [{ name = "Alex Goddard" }]

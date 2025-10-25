@@ -47,7 +47,7 @@ def tokenize_progress(
     *,
     enabled: bool = True,
 ):
-    """Return a tqdm progress bar for data tokenization."""
+    """Return a tqdm progress bar for data tokenisation."""
     return tqdm(
         total=total,
         desc="Tokenizing" if desc is None else desc,

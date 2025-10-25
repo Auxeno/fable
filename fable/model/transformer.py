@@ -22,7 +22,7 @@ class Transformer(nnx.Module):
     dropout_rate : float
         Dropout rate to apply after attention and feed-forward layers.
     rngs : nnx.Rngs, optional
-        Random number generator for parameter initialization.
+        Random number generator for parameter initialisetion.
     """
 
     def __init__(

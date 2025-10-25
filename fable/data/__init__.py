@@ -1,5 +1,5 @@
 """
-Data preprocessing utilities for loading corpora and tokenizing text.
+Data preprocessing utilities for loading corpora and tokenising text.
 """
 
 from fable.data.pipeline import (
