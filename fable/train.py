@@ -146,7 +146,7 @@ def train_step(
     return loss, new_state
 
 
-def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
+def train(model: GPT | None = None) -> GPT:
     """
     Run a simple training loop over the TinyStories dataset.
 
@@ -158,8 +158,8 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
 
     Returns
     -------
-    tuple[GPT, nnx.Optimizer, nnx.State]
-        Trained model, optimizer, and latest NNX state tree.
+    GPT
+        Trained GPT model.
     """
     if model is None:
         # Initialise a model if not provided
@@ -256,11 +256,7 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
                 # Save checkpoints at configured milestones
                 if (global_step := step + 1 + epoch * epoch_steps) in checkpoint_steps:
                     model_snapshot, _ = nnx.merge(graphdef, state)
-                    save(
-                        nnx.state(model_snapshot),
-                        config=config,
-                        filename=f"model_step_{global_step}.ckpt",
-                    )
+                    save(model_snapshot, filename=f"model_step_{global_step}.ckpt")
 
     if config.verbose:
         print(
@@ -270,7 +266,7 @@ def train(model: GPT | None = None) -> tuple[GPT, nnx.Optimizer, nnx.State]:
 
     nnx.update((model, optimizer), state)
 
-    return model, optimizer, state
+    return model
 
 
 def main() -> None:
@@ -330,15 +326,11 @@ def main() -> None:
     rng = jax.random.PRNGKey(config.seed)
     model = GPT(config=config, rngs=nnx.Rngs(rng))
 
-    trained_model, _, _ = train(model=model)
+    trained_model = train(model=model)
 
     if not args.no_save:
         checkpoint_path = Path(args.output)
-        save(
-            nnx.state(trained_model),
-            config=trained_model.config,
-            path=checkpoint_path,
-        )
+        save(trained_model, path=checkpoint_path)
 
         resolved = checkpoint_path.with_suffix(".ckpt").resolve()
         try:

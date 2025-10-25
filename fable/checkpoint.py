@@ -8,31 +8,28 @@ import orbax.checkpoint as ocp
 from absl import logging as absl_logging
 from flax import nnx
 
-from fable.config import GPTConfig
 from fable.model import GPT
+from fable.config import GPTConfig
 
 # Reduce verbosity of Orbax logging
 absl_logging.set_verbosity(absl_logging.ERROR)
 
 
 def save(
-    state: nnx.State,
+    model: GPT,
     *,
-    config: GPTConfig,
     filename: str = "model_state.ckpt",
     folder_name: str = "checkpoints",
     path: Path | None = None,
     overwrite: bool = True,
 ) -> None:
     """
-    Saves an `nnx.State` and its configuration to disk using Orbax.
+    Saves a GPT model to disk using Orbax (configuration stored for reloads).
 
     Parameters
     ----------
-    state : nnx.State
-        Variable state extracted from a GPT model.
-    config : GPTConfig
-        Hyperparameters used to build the model.
+    model : GPT
+        Model instance whose parameters should be persisted.
     filename : str, optional
         Checkpoint filename. Defaults to `"model_state.ckpt"`.
     folder_name : str, optional
@@ -60,8 +57,10 @@ def save(
         shutil.rmtree(checkpoint_path, ignore_errors=True)
 
     # Build payload using a pure mapping so checkpoint round-trips stay portable.
+    state = nnx.state(model)
+
     payload: dict[str, Any] = {"state": nnx.to_pure_dict(state)}
-    payload["config"] = asdict(config)
+    payload["config"] = asdict(model.config)
 
     # Create and use AsyncCheckpointer with StandardCheckpointHandler
     ckptr = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
@@ -71,17 +70,17 @@ def save(
 
 def load(
     *,
-    filename: str = "model_state.ckpt",
+    filename: str = "demo.ckpt",
     folder_name: str = "checkpoints",
     path: Path | None = None,
-) -> tuple[GPT, GPTConfig]:
+) -> GPT:
     """
-    Restore a GPT model and configuration from a saved checkpoint.
+    Restore a GPT model from a saved checkpoint.
 
     Parameters
     ----------
     filename : str, optional
-        Checkpoint filename. Defaults to `"model_state.ckpt"`.
+        Checkpoint filename. Defaults to `"demo.ckpt"`.
     folder_name : str, optional
         Directory where checkpoints are stored. Defaults to `"checkpoints"`.
     path : pathlib.Path, optional
@@ -90,8 +89,8 @@ def load(
 
     Returns
     -------
-    tuple[GPT, GPTConfig]
-        The restored model instance and its configuration.
+    GPT
+        The restored model instance.
 
     Raises
     ------
@@ -140,4 +139,4 @@ def load(
     nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
     nnx.update(model, model_state)
 
-    return model, config
+    return model

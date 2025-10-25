@@ -91,16 +91,17 @@ To generate a story, simply write the first few words/lines and Fable will conti
 ### Python API
 
 ```python
-from fable import generate_text, load
+from fable import generate_text
 
-model, _ = load("demo.ckpt")  # Loads checkpoints/demo.ckpt
-generate_text(model, story_beginning="Lily got a new puppy")
+generate_text("Lily got a new puppy")  # Uses checkpoints/demo.ckpt by default
+# To sample your own run: generate_text("...", checkpoint="model_state.ckpt")
 ```
 
 ### Command Line Interface
 
 ```bash
-fable-generate --prompt "Lily got a new puppy" --temperature 0.6
+fable-generate --start "Lily got a new puppy" --temperature 0.6
+# Use --checkpoint model_state.ckpt to load your own training run
 ```
 
 ### Temperature Examples
@@ -113,7 +114,7 @@ Sampling temperature controls the balance between determinism and creativity:
 
 #### 🟦 Temperature 0.4 — Stable and consistent
 ```python
-generate_text(model, "Lily got a new puppy", temperature=0.4)
+generate_text("Lily got a new puppy", temperature=0.4)
 
 """
 Lily got a new puppy and said, "I want to see it!" Her mom smiled and said, 
@@ -126,7 +127,7 @@ Lily felt better.
 
 #### 🟧 Temperature 0.6 — Balanced but sometimes incoherent
 ```python
-generate_text(model, "Lily got a new puppy", temperature=0.6)
+generate_text("Lily got a new puppy", temperature=0.6)
 
 """
 Lily got a new puppy named Spot. He hit his ball out and fell on the floor. 
@@ -140,7 +141,7 @@ Spot gave the ball a kiss and the ball back to their mommy.
 
 #### 🟥 Temperature 0.8 — Fluent but nonsense
 ```python
-generate_text(model, "Lily got a new puppy", temperature=0.8)
+generate_text("Lily got a new puppy", temperature=0.8)
 
 """
 Lily got a new puppy and stopped pretending,
@@ -183,9 +184,10 @@ Once data is prepared, train a model from scratch using either Python or the CLI
 ### Python API
 
 ```python
-from fable import train
+from fable import save, train
 
-model, optimizer, state = train()
+model = train()
+save(model)
 ```
 
 ### Command-Line Interface

@@ -58,9 +58,10 @@ def predict_next_token(
 
 
 def generate_text(
-    model: GPT,
-    story_beginning: str,
+    start: str,
     *,
+    model: GPT | None = None,
+    checkpoint: str = "demo.ckpt",
     temperature: float = 0.6,
     max_output_tokens: int = 5_000,
     chars_per_second: float = 70.0,
@@ -71,10 +72,12 @@ def generate_text(
 
     Parameters
     ----------
-    model : GPT
+    start : str
+        Story beginning text to seed generation, must be shorter than the model context.
+    model : GPT | None, optional
         The autoregressive model to sample from (will be switched to eval mode).
-    story_beginning : str
-        Prompt text to seed generation; must be shorter than the model context.
+    checkpoint : str, optional
+        Checkpoint filename used when `model` is not provided (default: demo.ckpt).
     temperature : float, optional
         Sampling temperature; lower values make predictions more greedy.
     max_output_tokens : int, optional
@@ -84,6 +87,9 @@ def generate_text(
     seed : int | None, optional
         RNG seed, random seed generated when omitted.
     """
+    if model is None:
+        model = load(filename=checkpoint)
+
     # Infer training maximum sequence length from positional encodings
     max_seq_len = len(model.positional_encodings)
 
@@ -92,9 +98,9 @@ def generate_text(
     eot_token = tokenizer_config["special_tokens"][tokenizer_config["eot_token"]]
 
     # Tokenize story beginning
-    context_tokens: list[int] = tokenize(story_beginning, tokenizer_config)
+    context_tokens: list[int] = tokenize(start, tokenizer_config)
     if not context_tokens:
-        raise ValueError("`story_beginning` must contain at least one token.")
+        raise ValueError("`start` must contain at least one token.")
     if len(context_tokens) >= max_seq_len:
         raise ValueError(f"Prompt longer than model context length of {max_seq_len}.")
 
@@ -116,7 +122,7 @@ def generate_text(
     next_token_fn = jax.jit(predict_next_token)
 
     # Print story beginning
-    print(story_beginning, end="", flush=True)
+    print(start, end="", flush=True)
 
     # Configure pacing for console output
     seconds_per_char = 1.0 / chars_per_second
@@ -162,11 +168,11 @@ def generate_text(
 def main() -> None:
     """Command-line entry point for text generation."""
     parser = argparse.ArgumentParser(
-        description="Stream text from a Fable GPT checkpoint."
+        description="Generate a short story from a Fable GPT checkpoint."
     )
     parser.add_argument(
-        "--prompt",
-        "-p",
+        "--start",
+        "-s",
         help="Prompt text to seed generation. Reads from stdin when omitted.",
     )
     parser.add_argument(
@@ -201,20 +207,19 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    prompt = args.prompt
-    if prompt is None:
+    start_text = args.start
+    if start_text is None:
         try:
-            prompt = input("Prompt: ").strip()
+            start_text = input("Start: ").strip()
         except EOFError:
-            prompt = ""
+            start_text = ""
 
-    if not prompt:
-        raise SystemExit("A non-empty prompt is required to generate text.")
+    if not start_text:
+        raise SystemExit("A non-empty start is required to generate text.")
 
-    model, _ = load(filename=args.checkpoint)
     generate_text(
-        model=model,
-        story_beginning=prompt,
+        start=start_text,
+        checkpoint=args.checkpoint,
         temperature=args.temperature,
         max_output_tokens=args.max_tokens,
         seed=args.seed,
