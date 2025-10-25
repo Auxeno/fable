@@ -116,7 +116,9 @@ Sampling temperature controls the balance between determinism and creativity:
 generate_text(model, "Lily got a new puppy", temperature=0.4)
 
 """
-Lily got a new puppy and said, "I want to see it!" Her mom smiled and said, "Okay, Lily. Let's go to the puppy and see if we can play with it." Lily smiled and said, "Okay."
+Lily got a new puppy and said, "I want to see it!" Her mom smiled and said, 
+"Okay, Lily. Let's go to the puppy and see if we can play with it." 
+Lily smiled and said, "Okay."
 Lily felt better.
 ...
 """
@@ -127,7 +129,10 @@ Lily felt better.
 generate_text(model, "Lily got a new puppy", temperature=0.6)
 
 """
-Lily got a new puppy named Spot. He hit his ball out and fell on the floor. He cried and benly, but Spot was too fit fast. His friend cheered and then flew to the ball. They pulled and tugged and tugged. They ran away.
+Lily got a new puppy named Spot. He hit his ball out and fell on the floor. 
+He cried and benly, but Spot was too fit fast. 
+His friend cheered and then flew to the ball. 
+They pulled and tugged and tugged. They ran away.
 Spot gave the ball a kiss and the ball back to their mommy.
 ...
 """
@@ -138,8 +143,12 @@ Spot gave the ball a kiss and the ball back to their mommy.
 generate_text(model, "Lily got a new puppy", temperature=0.8)
 
 """
-Lily got a new puppy and stopped pretending, because other automobiles walked through the fall.
-Aftenma's mushy man purred a sleepy scene for a while, although Weggin circle. They barked and snuggled until Fridge was. Fred finally paddle of his bedroom were even blacker! Jeddy was so excited that he didn't want to give.
+Lily got a new puppy and stopped pretending,
+because other automobiles walked through the fall.
+Aftenma's mushy man purred a sleepy scene for a while, although Weggin circle. 
+They barked and snuggled until Fridge was. 
+Fred finally paddle of his bedroom were even blacker! 
+Jeddy was so excited that he didn't want to give.
 ...
 """
 ```
