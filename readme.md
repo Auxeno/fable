@@ -17,14 +17,11 @@
 <div align="center">
     <h3>
       <a href="#overview">Overview</a> |
-      <a href="#features">Features</a> |
       <a href="#demo">Demo</a> |
       <a href="#installation">Installation</a> |
       <a href="#text-generation">Text Generation</a> |
       <a href="#data-pipeline">Data Pipeline</a> |
-      <a href="#training">Training</a> |
-      <a href="#project-structure">Project Structure</a> |
-      <a href="#citation">Citation</a>
+      <a href="#training">Training</a>
     </h3>
 </div>
 
