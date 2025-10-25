@@ -8,7 +8,7 @@ from flax import nnx
 
 from fable.config import GPTConfig
 from fable.model.position import sinusoidal_embeddings
-from fable.model.transformer import TransformerDecoder
+from fable.model.transformer import Transformer
 
 
 class GPT(nnx.Module):
@@ -41,7 +41,7 @@ class GPT(nnx.Module):
         )
 
         self.transformer_blocks = nnx.List(
-            TransformerDecoder(
+            Transformer(
                 config.embed_dim,
                 config.num_heads,
                 config.dropout_rate,

@@ -9,7 +9,7 @@ from fable.model.attention import Attention
 from fable.model.feed_forward import FeedForward
 
 
-class TransformerDecoder(nnx.Module):
+class Transformer(nnx.Module):
     """
     Transformer decoder block module.
 
