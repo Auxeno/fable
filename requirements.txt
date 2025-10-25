@@ -1,6 +1,6 @@
 pytest
 jax
-flax
+flax>=0.12
 optax
 orbax-checkpoint
 tqdm
