@@ -19,7 +19,7 @@ def save(
     model: GPT,
     *,
     filename: str = "model_state.ckpt",
-    folder_name: str = "checkpoints",
+    folder_name: Path | str = "checkpoints",
     path: Path | None = None,
     overwrite: bool = True,
 ) -> None:
@@ -32,8 +32,9 @@ def save(
         Model instance whose parameters should be persisted.
     filename : str, optional
         Checkpoint filename. Defaults to `"model_state.ckpt"`.
-    folder_name : str, optional
-        Directory where checkpoints are stored. Defaults to `"checkpoints"`.
+    folder_name : Path | str, optional
+        Directory where checkpoints are stored. Defaults to the packaged
+        `fable/checkpoints` directory.
     path : pathlib.Path, optional
         Full path to the checkpoint directory. Overrides `folder_name` and
         `filename` when provided.
@@ -42,7 +43,10 @@ def save(
         `True`.
     """
     if path is None:
-        checkpoint_path = Path(folder_name) / filename
+        base_dir = Path(folder_name)
+        if not base_dir.is_absolute():
+            base_dir = (Path(__file__).resolve().parent / base_dir).resolve()
+        checkpoint_path = base_dir / filename
     else:
         checkpoint_path = Path(path)
 
@@ -71,7 +75,7 @@ def save(
 def load(
     *,
     filename: str = "demo.ckpt",
-    folder_name: str = "checkpoints",
+    folder_name: Path | str = "checkpoints",
     path: Path | None = None,
 ) -> GPT:
     """
@@ -81,8 +85,9 @@ def load(
     ----------
     filename : str, optional
         Checkpoint filename. Defaults to `"demo.ckpt"`.
-    folder_name : str, optional
-        Directory where checkpoints are stored. Defaults to `"checkpoints"`.
+    folder_name : Path | str, optional
+        Directory where checkpoints are stored. Defaults to the packaged
+        `fable/checkpoints` directory.
     path : pathlib.Path, optional
         Full path to the checkpoint directory. Overrides `folder_name` and
         `filename` when provided.
@@ -103,7 +108,10 @@ def load(
         `nnx.to_pure_dict`.
     """
     if path is None:
-        checkpoint_path = Path(folder_name) / filename
+        base_dir = Path(folder_name)
+        if not base_dir.is_absolute():
+            base_dir = (Path(__file__).resolve().parent / base_dir).resolve()
+        checkpoint_path = base_dir / filename
     else:
         checkpoint_path = Path(path)
 

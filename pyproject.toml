@@ -36,6 +36,7 @@ exclude = ["notebooks", "scripts", "checkpoints", "data", "experiments.ipynb"]
 
 [tool.setuptools.package-data]
 "fable.data" = ["tokenizer-config.json"]
+"fable.checkpoints" = ["demo.ckpt/**"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

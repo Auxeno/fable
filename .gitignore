@@ -8,6 +8,10 @@ data/tokenized/*
 !data/tokenized/.gitkeep
 checkpoints/*
 !checkpoints/demo.ckpt
+fable/checkpoints/*
+!fable/checkpoints/__init__.py
+!fable/checkpoints/demo.ckpt/
+!fable/checkpoints/demo.ckpt/**
 *.ipynb
 !/notebooks/*.ipynb
 todo.md
