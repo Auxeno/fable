@@ -5,7 +5,6 @@ Model training logic and utilities.
 import argparse
 from collections import deque
 from dataclasses import replace
-from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -256,7 +255,7 @@ def train(model: GPT | None = None) -> GPT:
                 # Save checkpoints at configured milestones
                 if (global_step := step + 1 + epoch * epoch_steps) in checkpoint_steps:
                     model_snapshot, _ = nnx.merge(graphdef, state)
-                    save(model_snapshot, filename=f"model_step_{global_step}.ckpt")
+                    save(model_snapshot, f"model_step_{global_step}")
 
     if config.verbose:
         print(
@@ -294,8 +293,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default="checkpoints/latest.ckpt",
-        help="Path for the final checkpoint (default: checkpoints/latest.ckpt).",
+        default="checkpoints/latest",
+        help="Path for the final checkpoint (default: checkpoints/latest).",
     )
     parser.add_argument(
         "--no-save",
@@ -326,18 +325,7 @@ def main() -> None:
     rng = jax.random.PRNGKey(config.seed)
     model = GPT(config=config, rngs=nnx.Rngs(rng))
 
-    trained_model = train(model=model)
-
-    if not args.no_save:
-        checkpoint_path = Path(args.output)
-        save(trained_model, path=checkpoint_path)
-
-        resolved = checkpoint_path.with_suffix(".ckpt").resolve()
-        try:
-            display_path = resolved.relative_to(Path.cwd())
-        except ValueError:
-            display_path = resolved
-        print(f"Final checkpoint saved to `{display_path.as_posix()}`.")
+    train(model=model)
 
 
 if __name__ == "__main__":

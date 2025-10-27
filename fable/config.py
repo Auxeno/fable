@@ -2,11 +2,7 @@
 Configuration management for Fable experiments.
 """
 
-from dataclasses import dataclass, field
-from typing import Callable
-
-import jax.numpy as jnp
-from jax.nn.initializers import truncated_normal
+from dataclasses import dataclass
 
 from fable.data.tokenize import get_vocabulary_size
 
@@ -37,11 +33,8 @@ class GPTConfig:
     use_bias: bool = False
     """Whether linear projections include a bias term."""
 
-    param_dtype: jnp.dtype = jnp.bfloat16
+    param_dtype: str = "bfloat16"
     """Default dtype for model parameters."""
-
-    init_fn: Callable = field(default_factory=lambda: truncated_normal(stddev=0.02))
-    """Initialiser used for learnable parameters."""
 
     learning_rate: float = 5e-4
     """Learning rate for the optimiser."""

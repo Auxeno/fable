@@ -2,8 +2,12 @@
 GPT-style autoregressive language model components.
 """
 
+from typing import Callable
+
 import jax
+import jax.numpy as jnp
 from flax import nnx
+from jax.nn.initializers import truncated_normal
 
 from fable.config import GPTConfig
 from fable.model.dropout import Dropout
@@ -20,6 +24,8 @@ class GPT(nnx.Module):
     ----------
     config : GPTConfig
         Hyperparameter bundle describing the model architecture.
+    init : Callable
+        Initialiser for learnable parameters.
     rngs : nnx.Rngs, optional
         Random number generator collection.
     """
@@ -28,24 +34,26 @@ class GPT(nnx.Module):
         self,
         config: GPTConfig = GPTConfig(),
         *,
+        init: Callable = truncated_normal(stddev=0.02),
         rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=0),
     ) -> None:
         self.config = config
+        dtype = getattr(jnp, config.param_dtype)
 
         self.positional_encodings = sinusoidal_embeddings(
             config.max_seq_len,
             config.embed_dim,
-            dtype=config.param_dtype,
+            dtype=dtype,
         )
         self.dropout = Dropout(config.dropout_rate, rngs=rngs)
-        self.layer_norm = LayerNorm(config.embed_dim, dtype=config.param_dtype)
+        self.layer_norm = LayerNorm(config.embed_dim, dtype=dtype)
 
         embed_key, blocks_key = jax.random.split(rngs.params())
         block_keys = jax.random.split(blocks_key, config.num_layers)
 
         # Learnable token projection matrix
         self.embedding_matrix = nnx.Param(
-            config.init_fn(
+            init(
                 embed_key,
                 (config.vocab_size, config.embed_dim),
                 config.param_dtype,
@@ -59,8 +67,8 @@ class GPT(nnx.Module):
                 dropout_rate=config.dropout_rate,
                 hidden_mult=config.mlp_hidden_mult,
                 use_bias=config.use_bias,
-                init=config.init_fn,
-                dtype=config.param_dtype,
+                init=init,
+                dtype=dtype,
                 rngs=nnx.Rngs(key),
             )
             for key in block_keys
