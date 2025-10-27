@@ -56,6 +56,6 @@ class LayerNorm(nnx.Module):
         mean = jnp.mean(x, axis=-1, keepdims=True)
         var = jnp.mean(jnp.square(x - mean), axis=-1, keepdims=True)
         x = (x - mean) * jax.lax.rsqrt(var + self.epsilon)
-        x = x * self.scale
-        x = x + self.bias
+        x = x * self.scale + self.bias
+
         return x

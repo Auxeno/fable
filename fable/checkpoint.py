@@ -134,7 +134,7 @@ def load(
     config = GPTConfig(**restored["config"])
 
     # Build a fresh model instance and hydrate it with the restored mapping
-    model = GPT(config=config, rngs=nnx.Rngs(0))
+    model = GPT(config=config, rngs=nnx.Rngs(params=0, dropout=1))
     state_payload = restored["state"]
     if not isinstance(state_payload, Mapping):
         raise TypeError(

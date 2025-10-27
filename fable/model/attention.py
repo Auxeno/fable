@@ -11,7 +11,22 @@ from jax.nn.initializers import truncated_normal
 
 
 class MultiHeadAttention(nnx.Module):
-    """Multi-head self-attention."""
+    """
+    Multi-head self-attention module.
+
+    Parameters
+    ----------
+    dim : int
+        Dimensionality of input embeddings.
+    num_heads : int
+        Number of attention heads.
+    init : Callable
+        Initialiser for learnable parameters.
+    dtype : jnp.dtype
+        Data type for learnable parameters.
+    rngs : nnx.Rngs, optional
+        Random number generator for parameter initialisation.
+    """
 
     def __init__(
         self,
@@ -19,7 +34,7 @@ class MultiHeadAttention(nnx.Module):
         num_heads: int,
         init: Callable = truncated_normal(stddev=0.02),
         dtype: jnp.dtype = jnp.float32,
-        rngs: nnx.Rngs = nnx.Rngs(0),
+        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=1),
     ) -> None:
         assert dim % num_heads == 0, "`dim` must be divisible by `num_heads`."
 
@@ -32,6 +47,25 @@ class MultiHeadAttention(nnx.Module):
         self.out_proj = nnx.Param(init(key_out, (dim, dim), dtype=dtype))
 
     def __call__(self, x: jax.Array, *, causal: bool) -> jax.Array:
+        """
+        Apply self-attention to the input sequence.
+
+        Parameters
+        ----------
+        x : jax.Array
+            Input array of shape (batch_size, seq_len, dim).
+        causal : bool
+            Whether to apply a causal mask to prevent attending to future tokens.
+
+        Returns
+        -------
+        outputs : jax.Array
+            Attention layer output array of shape `(batch_size, seq_len, dim)`.
+
+        Notes
+        -----
+        B = batch_size, S = seq_len, D = dim, N = num_heads, H = head_dim
+        """
         batch_size, seq_len, dim = x.shape
 
         # Project inputs into queries, keys and values (B, S, 3 * D)

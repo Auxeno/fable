@@ -164,12 +164,12 @@ def train(model: GPT | None = None) -> GPT:
     if model is None:
         # Initialise a model if not provided
         config = GPTConfig()
-        rng, key_init = jax.random.split(jax.random.PRNGKey(config.seed))
-        model = GPT(config=config, rngs=nnx.Rngs(key_init))
+        model = GPT(config, rngs=nnx.Rngs(params=config.seed, dropout=config.seed + 1))
     else:
         # Else read training config from model
         config = model.config
-        rng = jax.random.PRNGKey(config.seed)
+
+    rng = jax.random.PRNGKey(config.seed)
 
     # Load dataset from disk
     tokenized = load_tokenized_tinystories()

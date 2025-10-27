@@ -6,19 +6,29 @@ import jax
 from flax import nnx
 
 from fable.config import GPTConfig
+from fable.model.dropout import Dropout
 from fable.model.normalize import LayerNorm
 from fable.model.position import sinusoidal_embeddings
 from fable.model.transformer import Transformer
 
 
 class GPT(nnx.Module):
-    """GPT-style autoregressive language model composed from a configuration."""
+    """
+    GPT-style autoregressive language model composed from a configuration.
+
+    Parameters
+    ----------
+    config : GPTConfig
+        Hyperparameter bundle describing the model architecture.
+    rngs : nnx.Rngs, optional
+        Random number generator collection.
+    """
 
     def __init__(
         self,
         config: GPTConfig = GPTConfig(),
         *,
-        rngs: nnx.Rngs = nnx.Rngs(0),
+        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=0),
     ) -> None:
         self.config = config
 
@@ -27,7 +37,7 @@ class GPT(nnx.Module):
             config.embed_dim,
             dtype=config.param_dtype,
         )
-        self.dropout = nnx.Dropout(config.dropout_rate, rngs=rngs)
+        self.dropout = Dropout(config.dropout_rate, rngs=rngs)
         self.layer_norm = LayerNorm(config.embed_dim, dtype=config.param_dtype)
 
         embed_key, blocks_key = jax.random.split(rngs.params())
@@ -72,10 +82,11 @@ class GPT(nnx.Module):
             token probability logits.
         """
         x = self.embedding_matrix[tokens]
-        x += self.positional_encodings
+        x += self.positional_encodings[None, :, :]
         x = self.dropout(x)
         for block in self.transformer_blocks:
             x = block(x)
         x = self.layer_norm(x)
         logits = x @ self.embedding_matrix.T
+
         return logits
