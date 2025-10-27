@@ -11,6 +11,7 @@ from jax.nn.initializers import truncated_normal
 
 from fable.model.attention import MultiHeadAttention
 from fable.model.feed_forward import FeedForward
+from fable.model.normalize import LayerNorm
 
 
 class Transformer(nnx.Module):
@@ -28,8 +29,8 @@ class Transformer(nnx.Module):
         dtype: jnp.dtype = jnp.float32,
         rngs: nnx.Rngs = nnx.Rngs(0),
     ) -> None:
-        self.layer_norm_1 = nnx.LayerNorm(dim, rngs=rngs)
-        self.layer_norm_2 = nnx.LayerNorm(dim, rngs=rngs)
+        self.layer_norm_1 = LayerNorm(dim, dtype=dtype)
+        self.layer_norm_2 = LayerNorm(dim, dtype=dtype)
 
         self.dropout_1 = nnx.Dropout(rate=dropout_rate, rngs=rngs)
         self.dropout_2 = nnx.Dropout(rate=dropout_rate, rngs=rngs)

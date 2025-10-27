@@ -37,7 +37,7 @@ class GPTConfig:
     use_bias: bool = False
     """Whether linear projections include a bias term."""
 
-    param_dtype: jnp.dtype = jnp.float32
+    param_dtype: jnp.dtype = jnp.bfloat16
     """Default dtype for model parameters."""
 
     init_fn: Callable = field(default_factory=lambda: truncated_normal(stddev=0.02))

@@ -6,6 +6,7 @@ import jax
 from flax import nnx
 
 from fable.config import GPTConfig
+from fable.model.normalize import LayerNorm
 from fable.model.position import sinusoidal_embeddings
 from fable.model.transformer import Transformer
 
@@ -27,7 +28,7 @@ class GPT(nnx.Module):
             dtype=config.param_dtype,
         )
         self.dropout = nnx.Dropout(config.dropout_rate, rngs=rngs)
-        self.layer_norm = nnx.LayerNorm(config.embed_dim, rngs=rngs)
+        self.layer_norm = LayerNorm(config.embed_dim, dtype=config.param_dtype)
 
         embed_key, blocks_key = jax.random.split(rngs.params())
         block_keys = jax.random.split(blocks_key, config.num_layers)
