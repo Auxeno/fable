@@ -2,7 +2,11 @@
 Configuration management for Fable experiments.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
+
+import jax.numpy as jnp
+from jax.nn.initializers import truncated_normal
 
 from fable.data.tokenize import get_vocabulary_size
 
@@ -26,6 +30,18 @@ class GPTConfig:
 
     dropout_rate: float = 0.1
     """Dropout rate to apply after embeddings and transformer blocks."""
+
+    mlp_hidden_mult: int = 4
+    """Width multiplier for the feed-forward network hidden layer."""
+
+    use_bias: bool = False
+    """Whether linear projections include a bias term."""
+
+    param_dtype: jnp.dtype = jnp.float32
+    """Default dtype for model parameters."""
+
+    init_fn: Callable = field(default_factory=lambda: truncated_normal(stddev=0.02))
+    """Initialiser used for learnable parameters."""
 
     learning_rate: float = 5e-4
     """Learning rate for the optimiser."""
