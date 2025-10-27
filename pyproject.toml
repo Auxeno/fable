@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fable"
-version = "0.1.0"
+version = "0.1.1"
 description = "A  compact storytelling language model implemented from scratch using JAX and Flax NNX."
 readme = "readme.md"
 requires-python = ">=3.10"

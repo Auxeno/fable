@@ -214,8 +214,10 @@ fable/
 ├── generate.py                # Text generation helpers and CLI entry point
 ├── model/
 │   ├── attention.py           # Multi-head self-attention
+│   ├── dropout.py             # Lightweight stochastic dropout layer
 │   ├── feed_forward.py        # GELU MLP block
 │   ├── gpt.py                 # GPT model assembly and forward pass
+│   ├── normalize.py           # Layer normalisation layer
 │   ├── position.py            # Sinusoidal positional embeddings
 │   └── transformer.py         # Pre-norm decoder block with dropout
 ├── train.py                   # JIT-compiled training loop with Optax optimizers

@@ -13,6 +13,6 @@ from fable.train import train
 try:
     __version__ = importlib_metadata.version("fable")
 except importlib_metadata.PackageNotFoundError:
-    __version__ = "1.0.0"
+    __version__ = "0.1.1"
 
 __all__ = ["generate_text", "GPT", "GPTConfig", "load", "save", "train", "__version__"]
