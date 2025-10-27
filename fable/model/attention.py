@@ -21,7 +21,7 @@ class MultiHeadAttention(nnx.Module):
         dtype: jnp.dtype = jnp.float32,
         rngs: nnx.Rngs = nnx.Rngs(0),
     ) -> None:
-        assert dim % num_heads != 0, "`dim` must be divisible by `num_heads`."
+        assert dim % num_heads == 0, "`dim` must be divisible by `num_heads`."
 
         key_qkv, key_out = jax.random.split(rngs.params())
         self.num_heads = num_heads
