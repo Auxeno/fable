@@ -12,7 +12,7 @@ from flax import nnx
 
 from fable.checkpoint import load
 from fable.data.tokenize import detokenize, load_tokenizer_config, tokenize
-from fable.model import GPT
+from fable.models import GPT
 
 
 def predict_next_token(

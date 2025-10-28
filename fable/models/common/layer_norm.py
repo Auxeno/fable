@@ -1,5 +1,5 @@
 """
-Normalisation layers used within Fable models.
+Layer normalisation module.
 """
 
 import jax

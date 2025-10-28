@@ -12,7 +12,7 @@ import numpy as np
 from flax import nnx, serialization
 
 from fable.config import GPTConfig
-from fable.model import GPT
+from fable.models import GPT
 
 
 def save(model: GPT, checkpoint_name: str = "model_state") -> None:

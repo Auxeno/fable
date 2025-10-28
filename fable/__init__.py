@@ -7,7 +7,7 @@ from importlib import metadata as importlib_metadata
 from fable.checkpoint import load, save
 from fable.config import GPTConfig
 from fable.generate import generate_text
-from fable.model import GPT
+from fable.models import GPT
 from fable.train import train
 
 try:

@@ -9,10 +9,10 @@ import jax.numpy as jnp
 from flax import nnx
 from jax.nn.initializers import truncated_normal
 
-from fable.model.attention import MultiHeadAttention
-from fable.model.dropout import Dropout
-from fable.model.feed_forward import FeedForward
-from fable.model.normalize import LayerNorm
+from fable.models.gpt.attention import MultiHeadAttention
+from fable.models.common.dropout import Dropout
+from fable.models.gpt.feed_forward import FeedForward
+from fable.models.common.layer_norm import LayerNorm
 
 
 class Transformer(nnx.Module):

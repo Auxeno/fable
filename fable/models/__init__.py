@@ -2,6 +2,6 @@
 Model architectures and assembly helpers.
 """
 
-from fable.model.gpt import GPT
+from fable.models.gpt.gpt import GPT
 
 __all__ = ["GPT"]

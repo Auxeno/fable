@@ -1,5 +1,5 @@
 """
-Position encoding modules.
+Sinusoidal positional encoding generator.
 """
 
 import jax

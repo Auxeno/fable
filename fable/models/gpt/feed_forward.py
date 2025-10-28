@@ -1,5 +1,5 @@
 """
-Feedforward neural network modules.
+Simple feed-forward neural network module with optional biases.
 """
 
 from typing import Callable

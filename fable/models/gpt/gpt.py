@@ -10,10 +10,10 @@ from flax import nnx
 from jax.nn.initializers import truncated_normal
 
 from fable.config import GPTConfig
-from fable.model.dropout import Dropout
-from fable.model.normalize import LayerNorm
-from fable.model.position import sinusoidal_embeddings
-from fable.model.transformer import Transformer
+from fable.models.common.dropout import Dropout
+from fable.models.common.layer_norm import LayerNorm
+from fable.models.common.sinusoidal import sinusoidal_embeddings
+from fable.models.gpt.transformer import Transformer
 
 
 class GPT(nnx.Module):
