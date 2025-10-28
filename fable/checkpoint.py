@@ -16,7 +16,7 @@ from fable.model import GPT
 
 
 def save(model: GPT, checkpoint_name: str = "model_state") -> None:
-    path = Path("fable/checkpoints") / checkpoint_name
+    path = Path("checkpoints") / checkpoint_name
     path.mkdir(parents=True, exist_ok=True)
 
     # Split parameters (nnx.Param) and ignore the rest with ...
@@ -32,7 +32,19 @@ def save(model: GPT, checkpoint_name: str = "model_state") -> None:
 
 
 def load(checkpoint_name: str = "model_state") -> GPT:
-    path = Path("fable/checkpoints") / checkpoint_name
+    user_path = Path("checkpoints") / checkpoint_name
+    package_path = Path(__file__).resolve().parent / "checkpoints" / checkpoint_name
+
+    # Check both user and package paths for the checkpoint
+    if user_path.exists():
+        path = user_path
+    elif package_path.exists():
+        path = package_path
+    else:
+        raise FileNotFoundError(
+            f"Checkpoint '{checkpoint_name}' not found in {user_path} "
+            f"or {package_path}."
+        )
 
     # Build model skeleton from saved config
     config = json.loads((path / "config.json").read_text())
