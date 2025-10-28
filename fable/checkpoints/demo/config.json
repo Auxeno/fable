@@ -1,0 +1,18 @@
+{
+  "num_layers": 4,
+  "embed_dim": 128,
+  "num_heads": 4,
+  "vocab_size": 98,
+  "max_seq_len": 192,
+  "dropout_rate": 0.1,
+  "mlp_hidden_mult": 4,
+  "use_bias": false,
+  "param_dtype": "bfloat16",
+  "learning_rate": 0.0005,
+  "batch_size": 64,
+  "num_epochs": 10,
+  "seed": 0,
+  "verbose": true,
+  "enable_checkpointing": true,
+  "checkpoint_frequency": 10
+}
