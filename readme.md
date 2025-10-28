@@ -42,7 +42,7 @@ The included demo checkpoint was trained for **~2 hours on an RTX 4090** using t
 - 🧠 **Minimal GPT Architecture** — Lightweight decoder-only transformer (~800 k parameters).  
 - 🧵 **Simple Data Pipeline** — Deterministic download → clean → tokenise workflow for small text datasets.  
 - 🚀 **JIT Compilation** — Core steps compiled with `jax.jit`, achieving ~3 million tokens/sec throughput.  
-- 💾 **Orbax Checkpointing** — Save and restore model state and hyperparameters in a single file.  
+- 💾 **Checkpointing** — Save and restore model state and hyperparameters in a single folder.  
 - 📝 **Text Generation Tools** — Generate short stories with adjustable sampling temperature.  
 
 ---
@@ -93,15 +93,15 @@ To generate a story, simply write the first few words/lines and Fable will conti
 ```python
 from fable import generate_text
 
-generate_text("Lily got a new puppy")  # Uses checkpoints/demo.ckpt by default
-# To sample your own run: generate_text("...", checkpoint="model_state.ckpt")
+generate_text("Lily got a new puppy")  # Uses checkpoints/demo by default
+# To sample your own run: generate_text("...", checkpoint="model_state")
 ```
 
 ### Command Line Interface
 
 ```bash
 fable-generate --start "Lily got a new puppy" --temperature 0.6
-# Use --checkpoint model_state.ckpt to load your own training run
+# Use --checkpoint model_state to load your own training run
 ```
 
 ### Temperature Examples
@@ -204,7 +204,7 @@ Training progress and checkpoints are saved automatically in `checkpoints/`.
 
 ```
 fable/
-├── checkpoint.py              # Orbax save/load wrappers for NNX state trees
+├── checkpoint.py              # Save/load wrappers for NNX state trees
 ├── config.py                  # GPTConfig dataclass and defaults
 ├── data/
 │   ├── pipeline.py            # Text data download/clean/tokenise commands
@@ -214,15 +214,17 @@ fable/
 ├── generate.py                # Text generation helpers and CLI entry point
 ├── model/
 │   ├── attention.py           # Multi-head self-attention
+│   ├── dropout.py             # Lightweight stochastic dropout layer
 │   ├── feed_forward.py        # GELU MLP block
 │   ├── gpt.py                 # GPT model assembly and forward pass
+│   ├── normalize.py           # Layer normalisation layer
 │   ├── position.py            # Sinusoidal positional embeddings
 │   └── transformer.py         # Pre-norm decoder block with dropout
 ├── train.py                   # JIT-compiled training loop with Optax optimizers
 └── utils.py                   # TQDM helper wrappers
 
 checkpoints/
-└── demo.ckpt/                 # Example checkpoint trained for ~2 hours on RTX 4090
+└── demo/                      # Example checkpoint trained for ~2 hours on RTX 4090
 ```
 
 ---

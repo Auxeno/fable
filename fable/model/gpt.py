@@ -2,11 +2,16 @@
 GPT-style autoregressive language model components.
 """
 
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 from flax import nnx
+from jax.nn.initializers import truncated_normal
 
 from fable.config import GPTConfig
+from fable.model.dropout import Dropout
+from fable.model.normalize import LayerNorm
 from fable.model.position import sinusoidal_embeddings
 from fable.model.transformer import Transformer
 
@@ -19,6 +24,8 @@ class GPT(nnx.Module):
     ----------
     config : GPTConfig
         Hyperparameter bundle describing the model architecture.
+    init : Callable
+        Initialiser for learnable parameters.
     rngs : nnx.Rngs, optional
         Random number generator collection.
     """
@@ -27,30 +34,45 @@ class GPT(nnx.Module):
         self,
         config: GPTConfig = GPTConfig(),
         *,
-        rngs: nnx.Rngs = nnx.Rngs(0),
+        init: Callable = truncated_normal(stddev=0.02),
+        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=0),
     ) -> None:
+        self.config = config
+        dtype = getattr(jnp, config.param_dtype)
+
         self.positional_encodings = sinusoidal_embeddings(
-            config.max_seq_len, config.embed_dim
+            config.max_seq_len,
+            config.embed_dim,
+            dtype=dtype,
         )
-        self.dropout = nnx.Dropout(config.dropout_rate, rngs=rngs)
-        self.layer_norm = nnx.LayerNorm(config.embed_dim, rngs=rngs)
+        self.dropout = Dropout(config.dropout_rate, rngs=rngs)
+        self.layer_norm = LayerNorm(config.embed_dim, dtype=dtype)
+
+        embed_key, blocks_key = jax.random.split(rngs.params())
+        block_keys = jax.random.split(blocks_key, config.num_layers)
 
         # Learnable token projection matrix
         self.embedding_matrix = nnx.Param(
-            rngs.normal((config.vocab_size, config.embed_dim), dtype=jnp.float32) * 0.02
+            init(
+                embed_key,
+                (config.vocab_size, config.embed_dim),
+                config.param_dtype,
+            )
         )
 
         self.transformer_blocks = nnx.List(
             Transformer(
-                config.embed_dim,
-                config.num_heads,
-                config.dropout_rate,
-                rngs=rngs,
+                dim=config.embed_dim,
+                num_heads=config.num_heads,
+                dropout_rate=config.dropout_rate,
+                hidden_mult=config.mlp_hidden_mult,
+                use_bias=config.use_bias,
+                init=init,
+                dtype=dtype,
+                rngs=nnx.Rngs(key),
             )
-            for _ in range(config.num_layers)
+            for key in block_keys
         )
-
-        self.config = config
 
     def __call__(self, tokens: jax.Array) -> jax.Array:
         """
@@ -60,7 +82,6 @@ class GPT(nnx.Module):
         ----------
         tokens : jax.Array
             Input array of shape `(batch_size, seq_len)` containing integer token IDs.
-            Sequences must already be padded or truncated to `config.max_seq_len`.
 
         Returns
         -------
@@ -69,7 +90,7 @@ class GPT(nnx.Module):
             token probability logits.
         """
         x = self.embedding_matrix[tokens]
-        x += self.positional_encodings
+        x += self.positional_encodings[None, :, :]
         x = self.dropout(x)
         for block in self.transformer_blocks:
             x = block(x)

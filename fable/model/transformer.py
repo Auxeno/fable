@@ -2,60 +2,58 @@
 Transformer building blocks and configuration utilities.
 """
 
-import jax
-from flax import nnx
+from typing import Callable
 
-from fable.model.attention import Attention
+import jax
+import jax.numpy as jnp
+from flax import nnx
+from jax.nn.initializers import truncated_normal
+
+from fable.model.attention import MultiHeadAttention
+from fable.model.dropout import Dropout
 from fable.model.feed_forward import FeedForward
+from fable.model.normalize import LayerNorm
 
 
 class Transformer(nnx.Module):
-    """
-    Transformer decoder block module.
-
-    Parameters
-    ----------
-    embed_dim : int
-        Dimensionality of input embeddings.
-    num_heads : int
-        Number of attention heads.
-    dropout_rate : float
-        Dropout rate to apply after attention and feed-forward layers.
-    rngs : nnx.Rngs, optional
-        Random number generator for parameter initialisetion.
-    """
+    """Transformer decoder block module."""
 
     def __init__(
         self,
-        embed_dim: int,
+        dim: int,
         num_heads: int,
         dropout_rate: float,
-        rngs: nnx.Rngs = nnx.Rngs(0),
+        *,
+        hidden_mult: int = 4,
+        use_bias: bool = False,
+        init: Callable = truncated_normal(stddev=0.02),
+        dtype: jnp.dtype = jnp.float32,
+        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=1),
     ) -> None:
-        self.layer_norm_1 = nnx.LayerNorm(embed_dim, rngs=rngs)
-        self.layer_norm_2 = nnx.LayerNorm(embed_dim, rngs=rngs)
+        self.layer_norm_1 = LayerNorm(dim, dtype=dtype)
+        self.layer_norm_2 = LayerNorm(dim, dtype=dtype)
 
-        self.dropout_1 = nnx.Dropout(rate=dropout_rate, rngs=rngs)
-        self.dropout_2 = nnx.Dropout(rate=dropout_rate, rngs=rngs)
+        self.dropout_1 = Dropout(rate=dropout_rate, rngs=rngs)
+        self.dropout_2 = Dropout(rate=dropout_rate, rngs=rngs)
 
-        self.attention = Attention(embed_dim, num_heads, rngs=rngs)
+        self.attention = MultiHeadAttention(
+            dim=dim,
+            num_heads=num_heads,
+            init=init,
+            dtype=dtype,
+            rngs=rngs,
+        )
 
-        self.feed_forward = FeedForward(embed_dim, rngs=rngs)
+        self.feed_forward = FeedForward(
+            dim=dim,
+            hidden_mult=hidden_mult,
+            use_bias=use_bias,
+            init=init,
+            dtype=dtype,
+            rngs=rngs,
+        )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        """
-        Apply transformer decoder block to the input sequence.
-
-        Parameters
-        ----------
-        x : jax.Array
-            Input array of shape (batch_size, seq_len, embed_dim).
-
-        Returns
-        -------
-        x : jax.Array
-            Output array of shape (batch_size, seq_len, embed_dim).
-        """
         residual = x
         x = self.layer_norm_1(x)
         x = self.attention(x, causal=True)

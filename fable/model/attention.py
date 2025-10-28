@@ -2,94 +2,99 @@
 Attention mechanisms for sequence modeling.
 """
 
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 from flax import nnx
+from jax.nn.initializers import truncated_normal
 
 
-class Attention(nnx.Module):
+class MultiHeadAttention(nnx.Module):
     """
     Multi-head self-attention module.
 
     Parameters
     ----------
-    embed_dim : int
+    dim : int
         Dimensionality of input embeddings.
     num_heads : int
         Number of attention heads.
+    init : Callable
+        Initialiser for learnable parameters.
+    dtype : jnp.dtype
+        Data type for learnable parameters.
     rngs : nnx.Rngs, optional
-        Random number generator for parameter initialisetion.
+        Random number generator for parameter initialisation.
     """
 
     def __init__(
         self,
-        embed_dim: int,
+        dim: int,
         num_heads: int,
-        rngs: nnx.Rngs = nnx.Rngs(0),
+        init: Callable = truncated_normal(stddev=0.02),
+        dtype: jnp.dtype = jnp.float32,
+        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=1),
     ) -> None:
-        if not embed_dim % num_heads == 0:
-            raise ValueError("`embed_dim` must be divisible by `num_heads`.")
+        assert dim % num_heads == 0, "`dim` must be divisible by `num_heads`."
 
+        key_qkv, key_out = jax.random.split(rngs.params())
         self.num_heads = num_heads
-        self.head_dim = embed_dim // num_heads
+        self.head_dim = dim // num_heads
 
         # Initialise input and output projection weight matrices
-        self.qkv_proj = nnx.Param(
-            rngs.normal(shape=(embed_dim, 3 * embed_dim), dtype=jnp.float32) * 0.02
-        )
-        self.out_proj = nnx.Param(
-            rngs.normal(shape=(embed_dim, embed_dim), dtype=jnp.float32) * 0.02
-        )
+        self.qkv_proj = nnx.Param(init(key_qkv, (dim, 3 * dim), dtype=dtype))
+        self.out_proj = nnx.Param(init(key_out, (dim, dim), dtype=dtype))
 
-    def __call__(self, x: jax.Array, causal: bool) -> jax.Array:
+    def __call__(self, x: jax.Array, *, causal: bool) -> jax.Array:
         """
         Apply self-attention to the input sequence.
 
         Parameters
         ----------
         x : jax.Array
-            Input array of shape (batch_size, seq_len, embed_dim).
+            Input array of shape (batch_size, seq_len, dim).
         causal : bool
             Whether to apply a causal mask to prevent attending to future tokens.
 
         Returns
         -------
         outputs : jax.Array
-            Attention layer output array of shape `(batch_size, seq_len, embed_dim)`.
+            Attention layer output array of shape `(batch_size, seq_len, dim)`.
 
         Notes
         -----
-        B = batch_size, S = seq_len, E = embed_dim, H = num_heads, D = head_dim
+        B = batch_size, S = seq_len, D = dim, N = num_heads, H = head_dim
         """
-        batch_size, seq_len, embed_dim = x.shape
+        batch_size, seq_len, dim = x.shape
 
-        # Project input embeddings into queries keys and values (B, S, 3 * E)
+        # Project inputs into queries, keys and values (B, S, 3 * D)
         qkv = x @ self.qkv_proj
 
-        # Separate attention heads from final dimension (B, S, H, D, 3)
+        # Separate attention heads from final dimension (B, S, N, H, 3)
         qkv = qkv.reshape(batch_size, seq_len, self.num_heads, self.head_dim, 3)
 
-        # Transpose and split into q, k, v vectors 3 * (B, H, S, D)
+        # Transpose and split into q, k, v vectors 3 * (B, N, S, H)
         q, k, v = jnp.transpose(qkv, (4, 0, 2, 1, 3))
 
-        # Scaled dot product attention (B, H, S, S)
-        attention_logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(self.head_dim)
+        # Scaled dot-product attention logits (B, N, S, S)
+        logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(self.head_dim).astype(x.dtype)
 
-        # Broadcast causal mask to block attention to future positions (B, H, S, S)
-        causal_mask = jnp.where(
+        # Apply causal mask to prevent attending to future tokens (B, S, S)
+        mask = jnp.where(
             causal,
-            -1e9 * jnp.triu(jnp.ones((1, 1, seq_len, seq_len), dtype=jnp.float32), k=1),
-            0.0,
+            -1e9 * jnp.triu(jnp.ones((1, 1, seq_len, seq_len), dtype=x.dtype), k=1),
+            jnp.zeros((1, 1, seq_len, seq_len), dtype=x.dtype),
         )
-        attention_logits += causal_mask
+        logits += mask
 
-        # Normalise attention weights across key positions (B, H, S, S)
-        attention_weights = jax.nn.softmax(attention_logits, axis=-1)
+        # Normalise attention weights across key positions (B, N, S, S)
+        attention = jax.nn.softmax(logits, axis=-1)
 
-        # Weigh value vectors by attention scores (B, H, S, D)
-        context = (attention_weights @ v).transpose(0, 2, 1, 3)
+        # Weigh value vectors by attention scores (B, N, S, H)
+        x = (attention @ v).transpose(0, 2, 1, 3)
 
-        # Fold heads in embedding dimension and project output (B, S, E)
-        outputs = context.reshape(batch_size, seq_len, embed_dim) @ self.out_proj
+        # Fold heads in embedding dimension and project output (B, S, D)
+        x = x.reshape(batch_size, seq_len, dim) @ self.out_proj
 
-        return outputs
+        return x

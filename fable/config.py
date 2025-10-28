@@ -27,6 +27,15 @@ class GPTConfig:
     dropout_rate: float = 0.1
     """Dropout rate to apply after embeddings and transformer blocks."""
 
+    mlp_hidden_mult: int = 4
+    """Width multiplier for the feed-forward network hidden layer."""
+
+    use_bias: bool = False
+    """Whether linear projections include a bias term."""
+
+    param_dtype: str = "bfloat16"
+    """Default dtype for model parameters."""
+
     learning_rate: float = 5e-4
     """Learning rate for the optimiser."""
 

@@ -1,3 +1,7 @@
+"""
+Autoregressive text generation from a trained GPT model.
+"""
+
 import argparse
 import random
 import time
@@ -52,7 +56,7 @@ def predict_next_token(
     next_token_logits = logits[0, last_token_idx, :] / jnp.maximum(temperature, 1e-5)
 
     # Sample next token
-    next_token = jax.random.categorical(key, next_token_logits)
+    next_token = jax.random.categorical(key, next_token_logits).astype(jnp.int8)
 
     return next_token, rng
 
@@ -61,7 +65,7 @@ def generate_text(
     start: str,
     *,
     model: GPT | None = None,
-    checkpoint: str = "demo.ckpt",
+    checkpoint: str = "demo",
     temperature: float = 0.6,
     max_output_tokens: int = 5_000,
     chars_per_second: float = 70.0,
@@ -77,7 +81,7 @@ def generate_text(
     model : GPT | None, optional
         The autoregressive model to sample from (will be switched to eval mode).
     checkpoint : str, optional
-        Checkpoint filename used when `model` is not provided (default: demo.ckpt).
+        Checkpoint checkpoint_name used when `model` is not provided.
     temperature : float, optional
         Sampling temperature; lower values make predictions more greedy.
     max_output_tokens : int, optional
@@ -88,7 +92,7 @@ def generate_text(
         RNG seed, random seed generated when omitted.
     """
     if model is None:
-        model = load(filename=checkpoint)
+        model = load(checkpoint_name=checkpoint)
 
     # Infer training maximum sequence length from positional encodings
     max_seq_len = len(model.positional_encodings)
@@ -105,8 +109,10 @@ def generate_text(
         raise ValueError(f"Prompt longer than model context length of {max_seq_len}.")
 
     # Create initial context, padding tokens beyond initial sequence with zeros
-    context = jnp.zeros((1, max_seq_len), dtype=jnp.int32)
-    context = context.at[0, : len(context_tokens)].set(jnp.array(context_tokens))
+    context = jnp.zeros((1, max_seq_len), dtype=jnp.int8)
+    context = context.at[0, : len(context_tokens)].set(
+        jnp.asarray(context_tokens, dtype=jnp.int8)
+    )
     last_token_idx = len(context_tokens) - 1
 
     # Seed RNG
@@ -177,8 +183,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--checkpoint",
-        default="demo.ckpt",
-        help="Checkpoint filename stored under the checkpoints directory.",
+        default="demo",
+        help="Checkpoint folder name stored under the checkpoints directory.",
     )
     parser.add_argument(
         "--temperature",

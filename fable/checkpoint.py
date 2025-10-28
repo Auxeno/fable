@@ -1,150 +1,63 @@
-import shutil
-from collections.abc import Mapping
+"""
+Simple, portable GPT checkpoint save/load using NNX filters.
+"""
+
+import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
 
-import orbax.checkpoint as ocp
-from absl import logging as absl_logging
-from flax import nnx
+import jax
+import jax.numpy as jnp
+import numpy as np
+from flax import nnx, serialization
 
 from fable.config import GPTConfig
 from fable.model import GPT
 
-# Reduce verbosity of Orbax logging
-absl_logging.set_verbosity(absl_logging.ERROR)
+
+def save(model: GPT, checkpoint_name: str = "model_state") -> None:
+    path = Path("checkpoints") / checkpoint_name
+    path.mkdir(parents=True, exist_ok=True)
+
+    # Split parameters (nnx.Param) and ignore the rest with ...
+    _, params, _ = nnx.split(model, nnx.Param, ...)
+    pure = nnx.to_pure_dict(params)
+
+    # Move parameters to CPU and convert to NumPy arrays for serialisation
+    pure_cpu = jax.tree.map(lambda x: np.asarray(jax.device_get(x)), pure)
+
+    # Serialise and write to disk
+    (path / "params.msgpack").write_bytes(serialization.to_bytes(pure_cpu))
+    (path / "config.json").write_text(json.dumps(asdict(model.config), indent=2))
 
 
-def save(
-    model: GPT,
-    *,
-    filename: str = "model_state.ckpt",
-    folder_name: Path | str = "checkpoints",
-    path: Path | None = None,
-    overwrite: bool = True,
-) -> None:
-    """
-    Saves a GPT model to disk using Orbax (configuration stored for reloads).
+def load(checkpoint_name: str = "model_state") -> GPT:
+    user_path = Path("checkpoints") / checkpoint_name
+    package_path = Path(__file__).resolve().parent / "checkpoints" / checkpoint_name
 
-    Parameters
-    ----------
-    model : GPT
-        Model instance whose parameters should be persisted.
-    filename : str, optional
-        Checkpoint filename. Defaults to `"model_state.ckpt"`.
-    folder_name : Path | str, optional
-        Directory where checkpoints are stored. Defaults to the packaged
-        `fable/checkpoints` directory.
-    path : pathlib.Path, optional
-        Full path to the checkpoint directory. Overrides `folder_name` and
-        `filename` when provided.
-    overwrite : bool, optional
-        Whether to remove an existing checkpoint at the same path. Defaults to
-        `True`.
-    """
-    if path is None:
-        base_dir = Path(folder_name)
-        if not base_dir.is_absolute():
-            base_dir = (Path(__file__).resolve().parent / base_dir).resolve()
-        checkpoint_path = base_dir / filename
+    # Check both user and package paths for the checkpoint
+    if user_path.exists():
+        path = user_path
+    elif package_path.exists():
+        path = package_path
     else:
-        checkpoint_path = Path(path)
-
-    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-    if checkpoint_path.suffix == "":
-        checkpoint_path = checkpoint_path.with_suffix(".ckpt")
-
-    checkpoint_path = checkpoint_path.resolve()
-
-    # Remove old checkpoint if needed
-    if overwrite and checkpoint_path.exists():
-        shutil.rmtree(checkpoint_path, ignore_errors=True)
-
-    # Build payload using a pure mapping so checkpoint round-trips stay portable.
-    state = nnx.state(model)
-
-    payload: dict[str, Any] = {"state": nnx.to_pure_dict(state)}
-    payload["config"] = asdict(model.config)
-
-    # Create and use AsyncCheckpointer with StandardCheckpointHandler
-    ckptr = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
-    ckptr.save(checkpoint_path, args=ocp.args.StandardSave(payload))  # type: ignore
-    ckptr.wait_until_finished()
-
-
-def load(
-    *,
-    filename: str = "demo.ckpt",
-    folder_name: Path | str = "checkpoints",
-    path: Path | None = None,
-) -> GPT:
-    """
-    Restore a GPT model from a saved checkpoint.
-
-    Parameters
-    ----------
-    filename : str, optional
-        Checkpoint filename. Defaults to `"demo.ckpt"`.
-    folder_name : Path | str, optional
-        Directory where checkpoints are stored. Defaults to the packaged
-        `fable/checkpoints` directory.
-    path : pathlib.Path, optional
-        Full path to the checkpoint directory. Overrides `folder_name` and
-        `filename` when provided.
-
-    Returns
-    -------
-    GPT
-        The restored model instance.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the checkpoint path does not exist.
-    KeyError
-        If the checkpoint is missing the expected payload keys.
-    TypeError
-        If the stored state payload is not a mapping produced by
-        `nnx.to_pure_dict`.
-    """
-    if path is None:
-        base_dir = Path(folder_name)
-        if not base_dir.is_absolute():
-            base_dir = (Path(__file__).resolve().parent / base_dir).resolve()
-        checkpoint_path = base_dir / filename
-    else:
-        checkpoint_path = Path(path)
-
-    if checkpoint_path.suffix == "":
-        checkpoint_path = checkpoint_path.with_suffix(".ckpt")
-
-    checkpoint_path = checkpoint_path.resolve()
-
-    if not checkpoint_path.exists():
-        raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
-
-    ckptr = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
-    restored = ckptr.restore(checkpoint_path)
-
-    if "config" not in restored:
-        raise KeyError("Checkpoint is missing a saved GPTConfig payload.")
-    if "state" not in restored:
-        raise KeyError("Checkpoint is missing the model state payload.")
-
-    config = GPTConfig(**restored["config"])
-
-    # Build a fresh model instance and hydrate it with the restored mapping
-    model = GPT(config=config, rngs=nnx.Rngs(0))
-    state_payload = restored["state"]
-    if not isinstance(state_payload, Mapping):
-        raise TypeError(
-            "Checkpoint state must be a mapping produced by nnx.to_pure_dict; "
-            f"got {type(state_payload)!r}"
+        raise FileNotFoundError(
+            f"Checkpoint '{checkpoint_name}' not found in {user_path} "
+            f"or {package_path}."
         )
 
-    # Hydrate the model with the checkpoint contents.
-    model_state = nnx.state(model)
-    nnx.replace_by_pure_dict(model_state, state_payload)  # type: ignore
-    nnx.update(model, model_state)
+    # Build model skeleton from saved config
+    config = json.loads((path / "config.json").read_text())
+    model = GPT(config=GPTConfig(**config), rngs=nnx.Rngs(params=0, dropout=0))
+
+    # Hydrate with saved parameters
+    _, params, _ = nnx.split(model, nnx.Param, ...)
+    pure = nnx.to_pure_dict(params)
+    params_bytes = (path / "params.msgpack").read_bytes()
+    loaded = serialization.from_bytes(pure, params_bytes)
+    loaded = jax.tree.map(jnp.asarray, loaded)
+
+    nnx.replace_by_pure_dict(params, loaded)
+    nnx.update(model, params)
 
     return model
