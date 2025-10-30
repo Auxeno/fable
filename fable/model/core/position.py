@@ -31,20 +31,20 @@ def sinusoidal_embeddings(
 
     Notes
     -----
-    S = seq_len, E = embed_dim
+    s = seq_len, d = embed_dim
     """
-    # Relative positions (S, 1) and frequency scales for even dimensions (E / 2,)
-    positions = jnp.arange(seq_len, dtype=dtype)[:, None]
-    divisor = jnp.exp(
-        jnp.arange(0, embed_dim, 2, dtype=dtype) * (-jnp.log(10_000.0) / embed_dim)
-    )
+    s, d = seq_len, embed_dim
 
-    # Phase offsets for sine/cosine pairs (S, E/2)
+    # Relative positions (s, 1) and frequency scales for even dimensions (d / 2,)
+    positions = jnp.arange(s, dtype=dtype)[:, None]
+    divisor = jnp.exp(jnp.arange(0, d, 2, dtype=dtype) * (-jnp.log(10_000.0) / d))
+
+    # Phase offsets for sine/cosine pairs (s, d / 2)
     angles = positions * divisor
     sin, cos = jnp.sin(angles), jnp.cos(angles)
 
-    # Allocate embedding matrix and write sine/cosine into alternating columns (S, E)
-    embeddings = jnp.zeros((seq_len, embed_dim), dtype=dtype)
+    # Allocate embedding matrix and write sine/cosine into alternating columns (s, d)
+    embeddings = jnp.zeros((s, d), dtype=dtype)
     embeddings = embeddings.at[:, 0::2].set(sin)
     embeddings = embeddings.at[:, 1::2].set(cos)
 
