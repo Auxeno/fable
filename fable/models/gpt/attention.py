@@ -64,37 +64,37 @@ class MultiHeadAttention(nnx.Module):
 
         Notes
         -----
-        B = batch_size, S = seq_len, D = dim, N = num_heads, H = head_dim
+        b = batch_size, s = seq_len, d = dim, n = num_heads, d = head_dim
         """
-        batch_size, seq_len, dim = x.shape
+        (b, s, d), n, h = x.shape, self.num_heads, self.head_dim
 
-        # Project inputs into queries, keys and values (B, S, 3 * D)
+        # Project inputs into queries, keys and values (b, s, 3 * d)
         qkv = x @ self.qkv_proj
 
-        # Separate attention heads from final dimension (B, S, N, H, 3)
-        qkv = qkv.reshape(batch_size, seq_len, self.num_heads, self.head_dim, 3)
+        # Separate attention heads from final dimension (b, s, n, d, 3)
+        qkv = qkv.reshape(b, s, n, h, 3)
 
-        # Transpose and split into q, k, v vectors 3 * (B, N, S, H)
+        # Transpose and split into q, k, v vectors 3 * (b, n, s, d)
         q, k, v = jnp.transpose(qkv, (4, 0, 2, 1, 3))
 
-        # Scaled dot-product attention logits (B, N, S, S)
-        logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(self.head_dim).astype(x.dtype)
+        # Scaled dot-product attention logits (b, n, s, s)
+        logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(d).astype(x.dtype)
 
-        # Apply causal mask to prevent attending to future tokens (B, S, S)
+        # Apply causal mask to prevent attending to future tokens (b, s, s)
         mask = jnp.where(
             causal,
-            -1e9 * jnp.triu(jnp.ones((1, 1, seq_len, seq_len), dtype=x.dtype), k=1),
-            jnp.zeros((1, 1, seq_len, seq_len), dtype=x.dtype),
+            -1e9 * jnp.triu(jnp.ones((1, 1, s, s), dtype=x.dtype), k=1),
+            jnp.zeros((1, 1, s, s), dtype=x.dtype),
         )
         logits += mask
 
-        # Normalise attention weights across key positions (B, N, S, S)
+        # Normalise attention weights across key positions (b, n, s, s)
         attention = jax.nn.softmax(logits, axis=-1)
 
-        # Weigh value vectors by attention scores (B, N, S, H)
+        # Weigh value vectors by attention scores (b, n, s, d)
         x = (attention @ v).transpose(0, 2, 1, 3)
 
-        # Fold heads in embedding dimension and project output (B, S, D)
-        x = x.reshape(batch_size, seq_len, dim) @ self.out_proj
+        # Fold heads in embedding dimension and project output (b, s, d)
+        x = x.reshape(b, s, d) @ self.out_proj
 
         return x
