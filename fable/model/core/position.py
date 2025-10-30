@@ -49,3 +49,49 @@ def sinusoidal_embeddings(
     embeddings = embeddings.at[:, 1::2].set(cos)
 
     return embeddings
+
+
+def alibi_bias(
+    seq_len: int,
+    num_heads: int,
+    *,
+    dtype: jnp.dtype = jnp.float32,
+) -> jax.Array:
+    """
+    Compute ALiBi position bias matrix.
+
+    Parameters
+    ----------
+    seq_len : int
+        Sequence length.
+    num_heads : int
+        Number of attention heads (must be a power of 2).
+    dtype : jnp.dtype, optional
+        Array dtype for the resulting bias.
+
+    Returns
+    -------
+    bias : jax.Array
+        Array of shape `(num_heads, seq_len, seq_len)` containing
+        per-head linear positional biases to add to attention logits.
+
+    Notes
+    -----
+    s = seq_len, h = num_heads
+
+    bias[h, i, j] = slope[h] * (j - i)
+    """
+    assert (num_heads & (num_heads - 1)) == 0, "`num_heads` must be a power of 2."
+    s, n = seq_len, num_heads
+
+    # Geometric series of per-head slopes 0.5, 0.25, 0.125, ...  (n,)
+    head_slopes = (0.5 ** jnp.arange(1, n + 1)).astype(dtype)
+
+    # Relative distances between tokens (i - j) shape: (s, s)
+    positions = jnp.arange(s, dtype=dtype)
+    rel_pos = positions[None, :] - positions[:, None]
+
+    # Broadcast slopes over sequence dims and multiply by relative distances (n, s, s)
+    bias = head_slopes[:, None, None] * rel_pos[None, :, :]
+
+    return bias
