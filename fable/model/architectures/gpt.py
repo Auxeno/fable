@@ -28,6 +28,7 @@ class Transformer(nnx.Module):
         *,
         hidden_mult: int = 4,
         use_bias: bool = False,
+        use_alibi: bool = False,
         init: Callable = truncated_normal(stddev=0.02),
         dtype: jnp.dtype = jnp.float32,
         rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=1),
@@ -41,6 +42,7 @@ class Transformer(nnx.Module):
         self.attention = MultiHeadAttention(
             dim=dim,
             num_heads=num_heads,
+            use_alibi=use_alibi,
             init=init,
             dtype=dtype,
             rngs=rngs,
@@ -95,10 +97,10 @@ class GPT(nnx.Module):
         self.config = config
         dtype = getattr(jnp, config.param_dtype)
 
-        self.positional_encodings = sinusoidal_embeddings(
-            config.max_seq_len,
-            config.embed_dim,
-            dtype=dtype,
+        self.positional_encodings = (
+            sinusoidal_embeddings(config.max_seq_len, config.embed_dim, dtype=dtype)
+            if config.use_sinusoidal
+            else None
         )
         self.dropout = Dropout(config.dropout_rate, rngs=rngs)
         self.layer_norm = LayerNorm(config.embed_dim, dtype=dtype)
@@ -122,6 +124,7 @@ class GPT(nnx.Module):
                 dropout_rate=config.dropout_rate,
                 hidden_mult=config.mlp_hidden_mult,
                 use_bias=config.use_bias,
+                use_alibi=config.use_alibi,
                 init=init,
                 dtype=dtype,
                 rngs=nnx.Rngs(key),
@@ -145,7 +148,8 @@ class GPT(nnx.Module):
             token probability logits.
         """
         x = self.embedding_matrix[tokens]
-        x += self.positional_encodings[None, :, :]
+        if self.positional_encodings is not None:
+            x += self.positional_encodings
         x = self.dropout(x)
         for block in self.transformer_blocks:
             x = block(x)

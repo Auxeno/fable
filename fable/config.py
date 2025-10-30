@@ -33,6 +33,12 @@ class GPTConfig:
     use_bias: bool = False
     """Whether linear projections include a bias term."""
 
+    use_sinusoidal: bool = True
+    """Use sinusoidal positional encodings when True."""
+
+    use_alibi: bool = False
+    """Add ALiBi positional bias in attention layers when True."""
+
     param_dtype: str = "bfloat16"
     """Default dtype for model parameters."""
 

@@ -9,6 +9,8 @@ import jax.numpy as jnp
 from flax import nnx
 from jax.nn.initializers import truncated_normal
 
+from fable.model.core.position import alibi_bias
+
 
 class MultiHeadAttention(nnx.Module):
     """
@@ -32,6 +34,7 @@ class MultiHeadAttention(nnx.Module):
         self,
         dim: int,
         num_heads: int,
+        use_alibi: bool = False,
         init: Callable = truncated_normal(stddev=0.02),
         dtype: jnp.dtype = jnp.float32,
         rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=1),
@@ -41,6 +44,7 @@ class MultiHeadAttention(nnx.Module):
         key_qkv, key_out = jax.random.split(rngs.params())
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
+        self.use_alibi = use_alibi
 
         # Initialise input and output projection weight matrices
         self.qkv_proj = nnx.Param(init(key_qkv, (dim, 3 * dim), dtype=dtype))
@@ -79,6 +83,10 @@ class MultiHeadAttention(nnx.Module):
 
         # Scaled dot-product attention logits (b, n, s, s)
         logits = (q @ k.swapaxes(-1, -2)) / jnp.sqrt(h).astype(x.dtype)
+
+        # Optionally add ALiBi positional bias (b, n, s, s)
+        if self.use_alibi:
+            logits += alibi_bias(s, n, dtype=logits.dtype)
 
         # Apply causal mask to prevent attending to future tokens (b, s, s)
         mask = jnp.where(
