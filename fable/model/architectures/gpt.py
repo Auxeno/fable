@@ -60,7 +60,7 @@ class Transformer(nnx.Module):
     def __call__(self, x: jax.Array) -> jax.Array:
         residual = x
         x = self.layer_norm_1(x)
-        x = self.attention(x, causal=True)
+        x = self.attention(x)
         x = self.dropout_1(x)
         x = x + residual
         x = self.layer_norm_2(x)
