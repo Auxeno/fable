@@ -90,7 +90,7 @@ class MultiHeadAttention(nnx.Module):
             logits += bias  # (b, n, s, s)
 
         # Apply causal mask to prevent attending to future tokens
-        mask = jnp.triu(jnp.full((s, s), -jnp.inf, dtype=bool), k=1)  # (s, s)
+        mask = jnp.triu(jnp.full((s, s), -jnp.inf, dtype=logits.dtype), k=1)  # (s, s)
         logits += mask  # (b, n, s, s)
 
         # Normalise attention weights across key positions
@@ -193,7 +193,7 @@ class GroupQueryAttention(nnx.Module):
             logits += bias.reshape(g, m, s, s)  # (b, g, m, s, s)
 
         # Mask out future tokens for causal attention
-        mask = jnp.triu(jnp.full((s, s), -jnp.inf, dtype=bool), k=1)  # (s, s)
+        mask = jnp.triu(jnp.full((s, s), -jnp.inf, dtype=logits.dtype), k=1)  # (s, s)
         logits += mask  # (b, g, m, s, s)
 
         # Normalise attention weights across key positions within each group
