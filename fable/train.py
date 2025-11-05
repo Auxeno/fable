@@ -15,7 +15,7 @@ from fable.checkpoint import save
 from fable.config import GPTConfig
 from fable.data import load_tokenized_tinystories
 from fable.evaluate import eval_step
-from fable.model import GPT
+from fable.model.architectures.gpt import GPT
 from fable.utils import train_progress
 
 
