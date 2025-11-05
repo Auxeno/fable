@@ -73,7 +73,7 @@ class RMSNorm(nnx.Module):
     ) -> None:
         self.epsilon = epsilon
 
-        # Learnable scale parameters
+        # Initialise learnable scale parameters
         self.scale = nnx.Param(jnp.ones((dim,), dtype=dtype)) if use_scale else 1.0
 
     def __call__(self, x: jax.Array) -> jax.Array:
