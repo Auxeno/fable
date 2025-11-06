@@ -15,6 +15,7 @@ from fable.checkpoint import save
 from fable.config import GPTConfig
 from fable.data import load_tokenized_tinystories
 from fable.evaluate import eval_step
+from fable.model.architectures.aesop import Aesop
 from fable.model.architectures.gpt import GPT
 from fable.utils import train_progress
 
@@ -145,20 +146,20 @@ def train_step(
     return loss, new_state
 
 
-def train(model: GPT | None = None) -> GPT:
+def train(model: GPT | Aesop | None = None) -> GPT | Aesop:
     """
     Run a simple training loop over the TinyStories dataset.
 
     Parameters
     ----------
-    model : GPT, optional
+    model : GPT | Aesop, optional
         The model to train. When omitted a new instance is created from
         `GPTConfig()`.
 
     Returns
     -------
-    GPT
-        Trained GPT model.
+    GPT | Aesop
+        Trained language model.
     """
     if model is None:
         # Initialise a model if not provided
@@ -167,6 +168,7 @@ def train(model: GPT | None = None) -> GPT:
     else:
         # Else read training config from model
         config = model.config
+    model_name = model.__class__.__name__
 
     rng = jax.random.PRNGKey(config.seed)
 
@@ -209,7 +211,7 @@ def train(model: GPT | None = None) -> GPT:
     eval_fn = jax.jit(eval_step, static_argnums=(0,))
 
     if config.verbose:
-        print(f"Training GPT model for {config.num_epochs} epochs...")
+        print(f"Training {model_name} model for {config.num_epochs} epochs...")
 
     # Main training loop
     for epoch in range(config.num_epochs):
@@ -259,7 +261,7 @@ def train(model: GPT | None = None) -> GPT:
 
     if config.verbose:
         print(
-            f"Training complete after {config.num_epochs} epochs "
+            f"{model_name} training complete after {config.num_epochs} epochs "
             f"({total_steps} batches).\n"
         )
 

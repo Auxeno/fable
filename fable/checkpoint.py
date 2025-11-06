@@ -12,10 +12,10 @@ import numpy as np
 from flax import nnx, serialization
 
 from fable.config import GPTConfig
-from fable.model import GPT
+from fable.model import GPT, Aesop
 
 
-def save(model: GPT, checkpoint_name: str = "model_state") -> None:
+def save(model: GPT | Aesop, checkpoint_name: str = "model_state") -> None:
     path = Path("checkpoints") / checkpoint_name
     path.mkdir(parents=True, exist_ok=True)
 
@@ -31,7 +31,7 @@ def save(model: GPT, checkpoint_name: str = "model_state") -> None:
     (path / "config.json").write_text(json.dumps(asdict(model.config), indent=2))
 
 
-def load(checkpoint_name: str = "model_state") -> GPT:
+def load(checkpoint_name: str = "model_state") -> GPT | Aesop:
     user_path = Path("checkpoints") / checkpoint_name
     package_path = Path(__file__).resolve().parent / "checkpoints" / checkpoint_name
 
