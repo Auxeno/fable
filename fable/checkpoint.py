@@ -1,5 +1,5 @@
 """
-Simple, portable GPT checkpoint save/load using NNX filters.
+Simple, portable checkpoint save/load using NNX filters.
 """
 
 import json
@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import numpy as np
 from flax import nnx, serialization
 
-from fable.config import GPTConfig
+from fable.config import GPTConfig, AesopConfig
 from fable.model import GPT, Aesop
 
 
@@ -28,7 +28,11 @@ def save(model: GPT | Aesop, checkpoint_name: str = "model_state") -> None:
 
     # Serialise and write to disk
     (path / "params.msgpack").write_bytes(serialization.to_bytes(pure_cpu))
-    (path / "config.json").write_text(json.dumps(asdict(model.config), indent=2))
+    checkpoint_config = {
+        "model_type": model.__class__.__name__,
+        "config": asdict(model.config),
+    }
+    (path / "config.json").write_text(json.dumps(checkpoint_config, indent=2))
 
 
 def load(checkpoint_name: str = "model_state") -> GPT | Aesop:
@@ -47,8 +51,31 @@ def load(checkpoint_name: str = "model_state") -> GPT | Aesop:
         )
 
     # Build model skeleton from saved config
-    config = json.loads((path / "config.json").read_text())
-    model = GPT(config=GPTConfig(**config), rngs=nnx.Rngs(params=0, dropout=0))
+    config_payload = json.loads((path / "config.json").read_text())
+    if "model_type" in config_payload:
+        model_type = config_payload["model_type"]
+        config_dict = config_payload["config"]
+    else:
+        # Backwards compatibility for legacy checkpoints
+        model_type = "GPT"
+        config_dict = config_payload
+
+    config_cls_map = {
+        "GPT": GPTConfig,
+        "Aesop": AesopConfig,
+    }
+    model_cls_map = {
+        "GPT": GPT,
+        "Aesop": Aesop,
+    }
+
+    if model_type not in config_cls_map:
+        raise ValueError(
+            f"Unknown model type '{model_type}' in checkpoint '{checkpoint_name}'."
+        )
+
+    config = config_cls_map[model_type](**config_dict)
+    model = model_cls_map[model_type](config=config, rngs=nnx.Rngs(params=0, dropout=0))
 
     # Hydrate with saved parameters
     _, params, _ = nnx.split(model, nnx.Param, ...)
