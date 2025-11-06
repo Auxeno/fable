@@ -7,7 +7,7 @@ from importlib import metadata as importlib_metadata
 from fable.checkpoint import load, save
 from fable.config import GPTConfig
 from fable.generate import generate_text
-from fable.model import GPT
+from fable.model import GPT, Aesop
 from fable.train import train
 
 try:
@@ -15,4 +15,13 @@ try:
 except importlib_metadata.PackageNotFoundError:
     __version__ = "0.1.1"
 
-__all__ = ["generate_text", "GPT", "GPTConfig", "load", "save", "train", "__version__"]
+__all__ = [
+    "generate_text",
+    "GPT",
+    "Aesop",
+    "GPTConfig",
+    "load",
+    "save",
+    "train",
+    "__version__",
+]
