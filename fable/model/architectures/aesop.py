@@ -83,7 +83,7 @@ class Aesop(nnx.Module):
         config: AesopConfig = AesopConfig(),
         *,
         init: Callable = truncated_normal(stddev=0.02),
-        rngs: nnx.Rngs = nnx.Rngs(params=0, dropout=0),
+        rngs: nnx.Rngs = nnx.Rngs(params=0),
     ) -> None:
         self.config = config
         dtype = getattr(jnp, config.param_dtype)
